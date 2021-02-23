@@ -1,0 +1,3 @@
+# For general use
+# SAMPLES_OF_DATA_TO_LOOK_AT = 24 * 60
+SAMPLES_OF_DATA_TO_LOOK_AT = 30

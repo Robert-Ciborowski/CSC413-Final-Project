@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 
 binance_historical_data/*.csv
+venv/
+data_set/final-dataset.csv
 
 # C extensions
 *.so
