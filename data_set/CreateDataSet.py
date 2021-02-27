@@ -24,8 +24,8 @@ if __name__ == "__main__":
     historicalObtainer.trackStocks(listOfStocks)
 
     # set timeInterval to 60 when creating actual dataset!
-    # dataSetCreator = BinanceDataSetCreator(historicalObtainer, medianWithin=1.1)
-    dataSetCreator = BinanceDataSetCreator(historicalObtainer, dataInterval="day")
+    # dataSetCreator = BinanceDataSetCreator(historicalObtainer, dataInterval="day", medianWithin=1.1)
+    dataSetCreator = BinanceDataSetCreator(historicalObtainer, dataInterval="hour")
     print("Analyzing historical stock data...")
     dataSetCreator.createDataset(listOfStocks[0], startDate, endDate)
     dataSetCreator.exportToCSV("final-dataset.csv")

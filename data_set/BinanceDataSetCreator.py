@@ -24,17 +24,17 @@ class BinanceDataSetCreator:
 
     def __init__(self, dataObtainer: HistoricalBinanceDataObtainer, medianWithin=None, dataInterval="day"):
         self.dataObtainer = dataObtainer
-        # Minutes in a day:
-        self.numberOfSamples = 30 * 24
         self.medianWithin = medianWithin
 
         if dataInterval == "day":
             self._timeInterval = timedelta(days=1)
             self._datapointsPerDay = 1
+            self.numberOfSamples = 30
         else:
             # 1 hour
             self._timeInterval = timedelta(hours=1)
             self._datapointsPerDay = 24
+            self.numberOfSamples = 30 * 24
 
     def exportToCSV(self, path: str, pathPrefix=""):
         if len(self.inputData) == 0:
@@ -134,6 +134,7 @@ class BinanceDataSetCreator:
                                i + self.numberOfSamples + 1] / meanClose
 
             if self.medianWithin is not None and outputMedian + abs(outputMedian - 1.0) > self.medianWithin:
+                print("Skipping", outputMedian)
                 continue
 
             volume = volumeMeans[i : i + self.numberOfSamples]

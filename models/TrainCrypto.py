@@ -13,9 +13,9 @@ def train():
     data, labels = datasetLoader.load(shuffle=False)
 
     # Hyperparameters!
-    learningRate = 0.005
-    epochs = 100
-    batchSize = 40
+    learningRate = 0.007
+    epochs = 400
+    batchSize = 50
     decayRate = 0.005
     decayStep = 1.0
     dropout = 0.1

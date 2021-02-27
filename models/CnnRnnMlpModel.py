@@ -68,19 +68,20 @@ class CnnRnnMlpModel:
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))
         # self.model = tf.keras.models.Sequential()
         # self.model.add(input_seq)
-        layer = layers.Conv1D(filters=16, kernel_size=2, activation='relu',
-                          input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(input_layer)
         layer = layers.Conv1D(filters=16, kernel_size=4, activation='relu',
-                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
+                          input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(input_layer)
         layer = layers.Conv1D(filters=16, kernel_size=8, activation='relu',
                               input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
-        layer = layers.Conv1D(filters=16, kernel_size=16, activation='relu',
+        layer = layers.Conv1D(filters=16, kernel_size=32, activation='relu',
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
+        layer = layers.Conv1D(filters=16, kernel_size=64, activation='relu',
                               input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(
             layer)
         # layer = layers.AveragePooling1D(pool_size=2)(layer)
         layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(SAMPLES_OF_DATA_TO_LOOK_AT, input_shape=layer.shape))(layer)
-        layer = layers.Dense(10, activation='relu')(layer)
-        layer = layers.Dense(40, activation='relu')(layer)
+        layer = layers.Dense(720, activation='relu')(layer)
+        layer = layers.Dense(120, activation='relu')(layer)
+        # layer = layers.Dense(20, activation='relu')(layer)
         # layer = layers.Dense(20, activation='relu')(layer)
         # layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
 
