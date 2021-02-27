@@ -45,21 +45,20 @@ class CnnRnnMlpModel:
     """
     Precondition: prices is a pandas dataframe or series.
     """
-    def detect(self, data) -> float:
-        # This whole function needs to be remade!!!
-        return self._detect(data)
-
-    def _detect(self, data) -> float:
+    def predict(self, data, concatenate=False) -> float:
         # This whole function needs to be remade!!!
         time1 = datetime.now()
-        data = np.array([data])
-        result = self.model.predict(data)[0][0]
+        # data = np.array([data])
+        result = self.model.predict(data)
         # result = self.model(data).numpy()[0][0]
         time2 = datetime.now()
         print("Gave out a result of " + str(result) + ", took " + str(
             time2 - time1))
-        return result
 
+        if concatenate:
+            result = np.concatenate(result, axis=1)
+
+        return result
     """
     Creates a brand new neural network for this model.
     """
@@ -69,30 +68,61 @@ class CnnRnnMlpModel:
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))
         # self.model = tf.keras.models.Sequential()
         # self.model.add(input_seq)
-        layer = layers.Conv1D(filters=20, kernel_size=3, activation='relu',
-                         input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(input_layer)
+        layer = layers.Conv1D(filters=16, kernel_size=2, activation='relu',
+                          input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(input_layer)
+        layer = layers.Conv1D(filters=16, kernel_size=4, activation='relu',
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
+        layer = layers.Conv1D(filters=16, kernel_size=8, activation='relu',
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
+        layer = layers.Conv1D(filters=16, kernel_size=16, activation='relu',
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(
+            layer)
         # layer = layers.AveragePooling1D(pool_size=2)(layer)
-        layer = layers.Conv1D(filters=16, kernel_size=5, activation='relu',
-                          input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
-        layer = layers.AveragePooling1D(pool_size=2)(layer)
-        # self.model.add(
-        #     layers.Conv1D(filters=2, kernel_size=4, activation='relu',
-        #                   input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6)))
-        # self.model.add(layers.AveragePooling1D(pool_size=2))
-        # layer = layers.Flatten()(layer)
-        # layer = tf.keras.layers.LSTM(SAMPLES_OF_DATA_TO_LOOK_AT,
-        #                      input_shape=layer.shape)(layer)
         layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(SAMPLES_OF_DATA_TO_LOOK_AT, input_shape=layer.shape))(layer)
-        # layer = layers.Flatten()(layer)
-        layer = layers.Dense(80, activation='relu')(layer)
+        layer = layers.Dense(10, activation='relu')(layer)
         layer = layers.Dense(40, activation='relu')(layer)
-        layer = layers.Dense(15, activation='relu')(layer)
-        layer = layers.Dense(5, activation='relu')(layer)
-        layer = tf.keras.layers.Dropout(0.1)(layer)
-        # layer = layers.Dense(1, activation='sigmoid')(layer)
-        layer = layers.Dense(1, activation='relu')(layer)
-        self.model = tf.keras.Model(input_layer, layer)
-        self.model.compile(loss='mean_squared_error',
+        # layer = layers.Dense(20, activation='relu')(layer)
+        # layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
+
+        # Median
+        medianDense = layers.Dense(15, activation='relu')(layer)
+        medianDense = layers.Dense(15, activation='relu')(medianDense)
+        medianDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(medianDense)
+        medianFinal = layers.Dense(1, activation='relu', name="median")(medianDropout)
+
+        # 25th Percentile
+        twentyFifthConcat = tf.concat([layer, medianDense], 1)
+        twentyFifthDense = layers.Dense(15, activation='relu')(twentyFifthConcat)
+        twentyFifthDense = layers.Dense(5, activation='relu')(twentyFifthDense)
+        twentyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(twentyFifthDense)
+        twentyFifthFinal = layers.Dense(1, activation='relu', name="25th-percentile")(twentyFifthDropout)
+
+        # Min
+        minConcat = tf.concat([layer, twentyFifthDense], 1)
+        minDense = layers.Dense(15, activation='relu')(minConcat)
+        minDense = layers.Dense(5, activation='relu')(minDense)
+        twentyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(minDense)
+        minFinal = layers.Dense(1, activation='relu', name="min")(twentyFifthDropout)
+
+        # 75th Percentile
+        seventyFifthConcat = tf.concat([medianDense, layer], 1)
+        seventyFifthDense = layers.Dense(15, activation='relu')(seventyFifthConcat)
+        seventyFifthDense = layers.Dense(5, activation='relu')(seventyFifthDense)
+        seventyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(seventyFifthDense)
+        seventyFifthFinal = layers.Dense(1, activation='relu', name="75th-percentile")(seventyFifthDropout)
+
+        # Max
+        maxConcat = tf.concat([seventyFifthDense, layer], 1)
+        maxDense = layers.Dense(15, activation='relu')(maxConcat)
+        maxDense = layers.Dense(5, activation='relu')(maxDense)
+        maxDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(maxDense)
+        maxFinal = layers.Dense(1, activation='relu', name="max")(maxDropout)
+
+        outputs = [minFinal, twentyFifthFinal, medianFinal, seventyFifthFinal, maxFinal]
+        lossWeights = {"min": 1.0, "25th-percentile": 1.0, "median": 1.0,
+                       "75th-percentile": 1.0, "max": 1.0}
+        self.model = tf.keras.Model(input_layer, outputs=outputs)
+        self.model.compile(loss="mean_squared_error", loss_weights=lossWeights,
                            optimizer=tf.keras.optimizers.Adam(lr=self.hyperparameters.learningRate),
                            metrics=self._metrics)
         tf.keras.utils.plot_model(self.model,
@@ -128,11 +158,11 @@ class CnnRnnMlpModel:
         # list_of_metrics should be one of the names shown in:
         # https://www.tensorflow.org/tutorials/structured_data/imbalanced_data#define_the_model_and_metrics
 
-        plt.figure()
+        plt.figure(figsize=(20,10))
         plt.xlabel("Epoch")
         plt.ylabel("Value")
 
-        for m in metrics:
+        for m in hist:
             x = hist[m]
             plt.plot(epochs[1:], x[1:], label=m)
 
