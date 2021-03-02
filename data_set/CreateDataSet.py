@@ -7,8 +7,8 @@ from data_set.BinanceDataSetCreator import BinanceDataSetCreator
 
 if __name__ == "__main__":
     from datetime import datetime, timedelta
-    from stock_data.HistoricalBinanceDataObtainer import \
-        HistoricalBinanceDataObtainer
+    from stock_data.HistoricalDataObtainer import \
+        HistoricalDataObtainer
 
     listOfStocks = [
         # "LTCUSDT"
@@ -20,8 +20,8 @@ if __name__ == "__main__":
     startDate = datetime(day=1, month=1, year=2018, hour=0, minute=0)
     # endDate = datetime(day=19, month=3, year=2018, hour=0, minute=0)
     endDate = datetime(day=19, month=2, year=2021, hour=0, minute=0)
-    historicalObtainer = HistoricalBinanceDataObtainer(startDate, endDate + timedelta(days=2),
-                                                       "../binance_historical_data/")
+    historicalObtainer = HistoricalDataObtainer(startDate, endDate + timedelta(days=2),
+                                                       "../data_downloads/")
 
     # SPY
     # startDate = datetime(day=3, month=2, year=2004, hour=0, minute=0)

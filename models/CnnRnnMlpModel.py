@@ -129,9 +129,9 @@ class CnnRnnMlpModel:
         self.model.compile(loss="mean_squared_error", loss_weights=lossWeights,
                            optimizer=tf.keras.optimizers.Adam(lr=self.hyperparameters.learningRate),
                            metrics=self._metrics)
-        # tf.keras.utils.plot_model(self.model,
-        #                           "crypto_model.png",
-        #                           show_shapes=True)
+        tf.keras.utils.plot_model(self.model,
+                                  "crypto_model.png",
+                                  show_shapes=True)
 
     def trainModel(self, features, labels, validationSplit: float):
         """Train the model by feeding it data."""

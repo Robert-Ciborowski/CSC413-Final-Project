@@ -8,12 +8,12 @@ from typing import List
 import pytz
 from stock_pandas import StockDataFrame
 
-from stock_data import HistoricalBinanceDataObtainer
+from stock_data import HistoricalDataObtainer
 import csv
 from scipy import stats
 
 class BinanceDataSetCreator:
-    dataObtainer: HistoricalBinanceDataObtainer
+    dataObtainer: HistoricalDataObtainer
     numberOfSamples: int
     inputData: List
     outputData: List
@@ -22,7 +22,7 @@ class BinanceDataSetCreator:
     _dataTimeInterval = timedelta
     _datapointsPerDay: int
 
-    def __init__(self, dataObtainer: HistoricalBinanceDataObtainer, medianWithin=None, dataInterval="day"):
+    def __init__(self, dataObtainer: HistoricalDataObtainer, medianWithin=None, dataInterval="day"):
         self.dataObtainer = dataObtainer
         self.medianWithin = medianWithin
 
@@ -176,8 +176,10 @@ class BinanceDataSetCreator:
         bollLowers = [0 if math.isnan(x) else x for x in bollLowers]
 
         outputIndex = 0
+        entryAmount = int((len(closeMeans) - self.numberOfSamples - 1))
+
         for i in range(0, len(closeMeans) - self.numberOfSamples - 1, self._datapointsPerDay):
-            print("Creating entry", i, "/", int((len(closeMeans) - self.numberOfSamples - 1) / self._datapointsPerDay))
+            print("Percent of entries created: " + str(i / entryAmount * 100) + "%")
             close = closeMeans[i : i + self.numberOfSamples]
             meanClose = sum(close) / len(close)
             outputMedian = outputMedians[outputIndex] / meanClose
