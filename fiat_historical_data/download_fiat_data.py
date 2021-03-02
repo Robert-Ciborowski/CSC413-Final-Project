@@ -42,7 +42,7 @@ eurusd_contract.currency = "USD"
 
 # Request historical candles
 try:
-    app.reqHistoricalData(1, eurusd_contract, "20040202 12:00:00", "1 D", "1 min", "BID", 0, 2,
+    app.reqHistoricalData(1, eurusd_contract, "20040202 12:00:00", "1 D", "1 hour", "BID", 0, 2,
                           False, [])
     # app.reqHistoricalData(1, eurusd_contract, "20040102 12:00:00", "1 D",
     #                       "1 hour", "BID", 0, 2,

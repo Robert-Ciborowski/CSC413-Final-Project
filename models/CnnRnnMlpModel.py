@@ -36,7 +36,7 @@ class CnnRnnMlpModel:
         # The following lines adjust the granularity of reporting.
         pd.options.display.max_rows = 10
         pd.options.display.float_format = "{:.1f}".format
-        # tf.keras.backend.set_floatx('float32')
+        tf.keras.backend.set_floatx('float32')
 
     def setup(self, hyperparameters: Hyperparameters):
         self._buildMetrics()
@@ -68,54 +68,57 @@ class CnnRnnMlpModel:
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))
         # self.model = tf.keras.models.Sequential()
         # self.model.add(input_seq)
+        layer = layers.Conv1D(filters=16, kernel_size=2, activation='relu',
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(
+            input_layer)
         layer = layers.Conv1D(filters=16, kernel_size=4, activation='relu',
                           input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(input_layer)
         layer = layers.Conv1D(filters=16, kernel_size=8, activation='relu',
                               input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
-        layer = layers.Conv1D(filters=16, kernel_size=32, activation='relu',
-                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
-        layer = layers.Conv1D(filters=16, kernel_size=64, activation='relu',
-                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(
-            layer)
+        # layer = layers.Conv1D(filters=16, kernel_size=32, activation='relu',
+        #                       input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
+        # layer = layers.Conv1D(filters=16, kernel_size=64, activation='relu',
+        #                       input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(
+        #     layer)
         # layer = layers.AveragePooling1D(pool_size=2)(layer)
         layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(SAMPLES_OF_DATA_TO_LOOK_AT, input_shape=layer.shape))(layer)
-        layer = layers.Dense(720, activation='relu')(layer)
-        layer = layers.Dense(120, activation='relu')(layer)
+        layer = layers.Dense(100, activation='relu')(layer)
+        layer = layers.Dense(20, activation='relu')(layer)
         # layer = layers.Dense(20, activation='relu')(layer)
         # layer = layers.Dense(20, activation='relu')(layer)
         # layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
 
         # Median
-        medianDense = layers.Dense(15, activation='relu')(layer)
-        medianDense = layers.Dense(15, activation='relu')(medianDense)
+        medianDense = layers.Dense(20, activation='relu')(layer)
+        medianDense = layers.Dense(10, activation='relu')(medianDense)
         medianDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(medianDense)
         medianFinal = layers.Dense(1, activation='relu', name="median")(medianDropout)
 
         # 25th Percentile
-        twentyFifthConcat = tf.concat([layer, medianDense], 1)
-        twentyFifthDense = layers.Dense(15, activation='relu')(twentyFifthConcat)
-        twentyFifthDense = layers.Dense(5, activation='relu')(twentyFifthDense)
+        # twentyFifthConcat = tf.concat([layer, medianDense], 1)
+        twentyFifthDense = layers.Dense(20, activation='relu')(layer)
+        twentyFifthDense = layers.Dense(10, activation='relu')(twentyFifthDense)
         twentyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(twentyFifthDense)
         twentyFifthFinal = layers.Dense(1, activation='relu', name="25th-percentile")(twentyFifthDropout)
 
         # Min
-        minConcat = tf.concat([layer, twentyFifthDense], 1)
-        minDense = layers.Dense(15, activation='relu')(minConcat)
-        minDense = layers.Dense(5, activation='relu')(minDense)
+        # minConcat = tf.concat([layer, twentyFifthDense], 1)
+        minDense = layers.Dense(20, activation='relu')(layer)
+        minDense = layers.Dense(10, activation='relu')(minDense)
         twentyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(minDense)
         minFinal = layers.Dense(1, activation='relu', name="min")(twentyFifthDropout)
 
         # 75th Percentile
-        seventyFifthConcat = tf.concat([medianDense, layer], 1)
-        seventyFifthDense = layers.Dense(15, activation='relu')(seventyFifthConcat)
-        seventyFifthDense = layers.Dense(5, activation='relu')(seventyFifthDense)
+        # seventyFifthConcat = tf.concat([medianDense, layer], 1)
+        seventyFifthDense = layers.Dense(20, activation='relu')(layer)
+        seventyFifthDense = layers.Dense(10, activation='relu')(seventyFifthDense)
         seventyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(seventyFifthDense)
         seventyFifthFinal = layers.Dense(1, activation='relu', name="75th-percentile")(seventyFifthDropout)
 
         # Max
-        maxConcat = tf.concat([seventyFifthDense, layer], 1)
-        maxDense = layers.Dense(15, activation='relu')(maxConcat)
-        maxDense = layers.Dense(5, activation='relu')(maxDense)
+        # maxConcat = tf.concat([seventyFifthDense, layer], 1)
+        maxDense = layers.Dense(20, activation='relu')(layer)
+        maxDense = layers.Dense(10, activation='relu')(maxDense)
         maxDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(maxDense)
         maxFinal = layers.Dense(1, activation='relu', name="max")(maxDropout)
 
@@ -126,9 +129,9 @@ class CnnRnnMlpModel:
         self.model.compile(loss="mean_squared_error", loss_weights=lossWeights,
                            optimizer=tf.keras.optimizers.Adam(lr=self.hyperparameters.learningRate),
                            metrics=self._metrics)
-        tf.keras.utils.plot_model(self.model,
-                                  "crypto_model.png",
-                                  show_shapes=True)
+        # tf.keras.utils.plot_model(self.model,
+        #                           "crypto_model.png",
+        #                           show_shapes=True)
 
     def trainModel(self, features, labels, validationSplit: float):
         """Train the model by feeding it data."""

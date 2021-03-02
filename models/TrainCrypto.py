@@ -13,14 +13,14 @@ def train():
     data, labels = datasetLoader.load(shuffle=False)
 
     # Hyperparameters!
-    learningRate = 0.007
-    epochs = 400
-    batchSize = 50
+    learningRate = 0.0015
+    epochs = 800
+    batchSize = 20
     decayRate = 0.005
     decayStep = 1.0
     dropout = 0.1
 
-    model = CnnRnnMlpModel(tryUsingGPU=True)
+    model = CnnRnnMlpModel(tryUsingGPU=False)
     model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize,
                                 decayRate=decayRate, decayStep=decayStep))
     model.createModel()

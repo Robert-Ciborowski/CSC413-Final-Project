@@ -19,7 +19,7 @@ class BinanceDataSetCreator:
     outputData: List
     medianWithin: float
 
-    _timeInterval = timedelta
+    _dataTimeInterval = timedelta
     _datapointsPerDay: int
 
     def __init__(self, dataObtainer: HistoricalBinanceDataObtainer, medianWithin=None, dataInterval="day"):
@@ -27,14 +27,22 @@ class BinanceDataSetCreator:
         self.medianWithin = medianWithin
 
         if dataInterval == "day":
-            self._timeInterval = timedelta(days=1)
+            self._dataTimeInterval = timedelta(days=1)
             self._datapointsPerDay = 1
             self.numberOfSamples = 30
+        elif dataInterval == "2 hour":
+            self._dataTimeInterval = timedelta(hours=2)
+            self._datapointsPerDay = 12
+            self.numberOfSamples = 15 * 12
+        elif dataInterval == "3 hour":
+            self._dataTimeInterval = timedelta(hours=3)
+            self._datapointsPerDay = 8
+            self.numberOfSamples = 15 * 8
         else:
             # 1 hour
-            self._timeInterval = timedelta(hours=1)
+            self._dataTimeInterval = timedelta(hours=1)
             self._datapointsPerDay = 24
-            self.numberOfSamples = 30 * 24
+            self.numberOfSamples = 15 * 24
 
     def exportToCSV(self, path: str, pathPrefix=""):
         if len(self.inputData) == 0:
@@ -74,14 +82,17 @@ class BinanceDataSetCreator:
         self.outputData = []
         df = self.dataObtainer.getHistoricalDataAsDataframe(symbol)
 
-        # First, gather all of the means of the data
+        # First, we gather all of the means for our inputs.
         closeMeans = []
         volumeMeans = []
-        closeMedians = []
-        close75thPercentiles = []
-        close25thPercentiles = []
-        closeMaxes = []
-        closeMins = []
+
+        # Also, we will need to store the outputs, which represent the
+        # distributions of the next day prices.
+        outputMedians = []
+        output75thPercentiles = []
+        output25thPercentiles = []
+        outputMaxes = []
+        outputMins = []
         date = startDate
 
         while date < endDate:
@@ -89,26 +100,64 @@ class BinanceDataSetCreator:
             startIndex = df.index[df["Timestamp"] == date].tolist()
 
             if len(startIndex) == 0:
-                date += self._timeInterval
+                date += self._dataTimeInterval
+                closeMeans.append(closeMeans[-1])
+                volumeMeans.append(volumeMeans[-1])
                 continue
 
             startIndex = startIndex[0]
-            endIndex = df.index[df["Timestamp"] == date + timedelta(hours=1)].tolist()
+            endIndex = df.index[df["Timestamp"] == date + self._dataTimeInterval].tolist()
 
             if len(endIndex) == 0:
-                date += self._timeInterval
+                date += self._dataTimeInterval
+                closeMeans.append(closeMeans[-1])
+                volumeMeans.append(volumeMeans[-1])
                 continue
 
             endIndex = endIndex[0]
             data = df.iloc[startIndex : endIndex]
             closeMeans.append(data["Close"].mean())
             volumeMeans.append(data["Volume"].mean())
-            closeMedians.append(data["Close"].median())
-            close75thPercentiles.append(data["Close"].quantile(0.75))
-            close25thPercentiles.append(data["Close"].quantile(0.25))
-            closeMaxes.append(data["Close"].max())
-            closeMins.append(data["Close"].min())
-            date += self._timeInterval
+            date += self._dataTimeInterval
+
+        # We will gather the next day distribution characteristics, so we start
+        # at tomorrow.
+        date = startDate + self._dataTimeInterval * self._datapointsPerDay
+
+        while date < endDate:
+            print("Processing", date, "/", endDate)
+            startIndex = df.index[df["Timestamp"] == date].tolist()
+
+            if len(startIndex) == 0:
+                date += self._dataTimeInterval * self._datapointsPerDay
+                outputMedians.append(outputMedians[-1])
+                output75thPercentiles.append(output75thPercentiles[-1])
+                output25thPercentiles.append(output25thPercentiles[-1])
+                outputMaxes.append(outputMaxes[-1])
+                outputMins.append(outputMins[-1])
+                continue
+
+            startIndex = startIndex[0]
+            endIndex = df.index[
+                df["Timestamp"] == date + self._dataTimeInterval * self._datapointsPerDay].tolist()
+
+            if len(endIndex) == 0:
+                date += self._dataTimeInterval * self._datapointsPerDay
+                outputMedians.append(outputMedians[-1])
+                output75thPercentiles.append(output75thPercentiles[-1])
+                output25thPercentiles.append(output25thPercentiles[-1])
+                outputMaxes.append(outputMaxes[-1])
+                outputMins.append(outputMins[-1])
+                continue
+
+            endIndex = endIndex[0]
+            data = df.iloc[startIndex: endIndex]
+            outputMedians.append(data["Close"].median())
+            output75thPercentiles.append(data["Close"].quantile(0.75))
+            output25thPercentiles.append(data["Close"].quantile(0.25))
+            outputMaxes.append(data["Close"].max())
+            outputMins.append(data["Close"].min())
+            date += self._dataTimeInterval * self._datapointsPerDay
 
         stock = StockDataFrame({
             'close': closeMeans
@@ -126,15 +175,16 @@ class BinanceDataSetCreator:
         bollUppers = [0 if math.isnan(x) else x for x in bollUppers]
         bollLowers = [0 if math.isnan(x) else x for x in bollLowers]
 
+        outputIndex = 0
         for i in range(0, len(closeMeans) - self.numberOfSamples - 1, self._datapointsPerDay):
-            print("Creating entry", i, "/", len(closeMeans) - self.numberOfSamples - 1)
+            print("Creating entry", i, "/", int((len(closeMeans) - self.numberOfSamples - 1) / self._datapointsPerDay))
             close = closeMeans[i : i + self.numberOfSamples]
             meanClose = sum(close) / len(close)
-            outputMedian = closeMedians[
-                               i + self.numberOfSamples + 1] / meanClose
+            outputMedian = outputMedians[outputIndex] / meanClose
 
             if self.medianWithin is not None and outputMedian + abs(outputMedian - 1.0) > self.medianWithin:
                 print("Skipping", outputMedian)
+                outputIndex += 1
                 continue
 
             volume = volumeMeans[i : i + self.numberOfSamples]
@@ -151,7 +201,6 @@ class BinanceDataSetCreator:
             maxClose = max(close)
             maxVolume = max(volume)
 
-
             for j in range(len(close)):
                 close[j] /= maxClose
 
@@ -159,10 +208,10 @@ class BinanceDataSetCreator:
                 volume[j] /= maxVolume
 
             self.inputData.append([close, volume, rsi, ma, bollUpper, bollLower])
-            output75thPercentile = close75thPercentiles[i + self.numberOfSamples + 1] / meanClose
-            output25thPercentile = close25thPercentiles[i + self.numberOfSamples + 1] / meanClose
-            outputMax = closeMaxes[i + self.numberOfSamples + 1] / meanClose
-            outputMin = closeMins[i + self.numberOfSamples + 1] / meanClose
+            output75thPercentile = output75thPercentiles[outputIndex] / meanClose
+            output25thPercentile = output25thPercentiles[outputIndex] / meanClose
+            outputMax = outputMaxes[outputIndex] / meanClose
+            outputMin = outputMins[outputIndex] / meanClose
 
             # Use this if you want the model to predict if the price will be
             # higher or lower (instead or predicting the exact mean)
@@ -173,3 +222,4 @@ class BinanceDataSetCreator:
 
             self.outputData.append([outputMin, output25thPercentile, outputMedian,
                                     output75thPercentile, outputMax])
+            outputIndex += 1
