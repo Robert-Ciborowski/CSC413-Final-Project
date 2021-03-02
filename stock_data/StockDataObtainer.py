@@ -1,13 +1,12 @@
 # Name: Stock Data Obtainer
 # Author: Robert Ciborowski
 # Date: 13/04/2020
-# Description: Keeps track of stock prices to the minute.
+# Description: Keeps track of stock prices to the minute, simulated or real
+#              time.
 
-# from __future__ import annotations
 from datetime import datetime
 from typing import Dict, List
 import pandas as pd
-import yfinance as yf
 
 class StockDataObtainer:
     """
@@ -76,30 +75,3 @@ class StockDataObtainer:
                     dataDict["Ticker"].append(data.columns[i][1])
 
         return dataDict
-
-    """
-    If a minute is missing in a series, this fills them in.
-    """
-    # def _fixSeriesDates(self, series: pd.Series) -> pd.Series:
-    #     keys = series.keys()
-    #
-    #     if len(keys) == 0:
-    #         return series
-    #
-    #     prev = keys[0]
-    #     for i in range(1, len(keys)):
-    #         curr = keys[i]
-    #         diff = curr - prev
-    #         minutes_diff = int(diff.total_seconds() / 60)
-    #
-    #         if minutes_diff > 1:
-    #             price_diff = series[curr] - series[prev]
-    #             slope = price_diff / minutes_diff
-    #
-    #             for j in range(minutes_diff):
-    #
-    #         if keys[i].to_pydatetime() > time:
-    #             lastIndex = i
-    #             break
-    #
-    #         prev = curr

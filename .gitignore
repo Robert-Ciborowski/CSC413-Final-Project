@@ -3,9 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-binance_historical_data/*.csv
-fiat_historical_data/*.csv
-stocks_historical_data/*.csv
+data_downloads/*.csv
 venv/
 data_set/final-dataset.csv
 

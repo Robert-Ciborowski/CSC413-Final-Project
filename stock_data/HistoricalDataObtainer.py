@@ -1,9 +1,10 @@
-# Name: Historic Binance Crypto Data Obtainer
+# Name: Historic Data Obtainer
 # Author: Robert Ciborowski
 # Date: 13/04/2020
-# Description: Keeps track of stock prices to the minute.
+# Description: Keeps track of historical stock prices from a csv. Also allows
+#              you to pretend that you are in the past and get "real time" data
+#              as time passes.
 
-# from __future__ import annotations
 import csv
 from datetime import datetime, timedelta
 from typing import Dict, List
@@ -14,7 +15,7 @@ import pytz
 from stock_data.StockDataObtainer import StockDataObtainer
 from util.Constants import SAMPLES_OF_DATA_TO_LOOK_AT
 
-class HistoricalBinanceDataObtainer(StockDataObtainer):
+class HistoricalDataObtainer(StockDataObtainer):
     dateOfStart: datetime
     dateOfEnd: datetime
     filePathPrefix: str
@@ -23,15 +24,13 @@ class HistoricalBinanceDataObtainer(StockDataObtainer):
     # Pandas makes life easy but is very slow, so we use both Pandas and a
     # list of dicts. :clown:
     _dataAsDataFrames: Dict[str, pd.DataFrame]
-    _dataAsListOfDicts: Dict[str, List[Dict]]
 
-    _startTime: datetime
+    _simulationStartTime: datetime
     _obtained: bool
     _fastForwardAmount: float
 
     def __init__(self, dateOfStart: datetime, dateOfEnd: datetime, filePathPrefix="", fastForwardAmount=1):
-        self._startTime = datetime.now()
-        self.endOfMarket = (4, 0)
+        self._simulationStartTime = datetime.now()
         self._dataAsDataFrames = {}
         self._dataAsListOfDicts = {}
         self._obtained = False
@@ -43,7 +42,7 @@ class HistoricalBinanceDataObtainer(StockDataObtainer):
         self.dateOfEnd = timezone.localize(dateOfEnd)
 
     def setStartTimeToNow(self):
-        self._startTime = datetime.now()
+        self._simulationStartTime = datetime.now()
 
     def trackStocks(self, tickers: List[str]):
         if self._obtained:
@@ -116,7 +115,6 @@ class HistoricalBinanceDataObtainer(StockDataObtainer):
                         print("Read " + ticker + " data up to " + str(timing))
                         count = 0
 
-            # df = pd.DataFrame(entries, index=index, columns=["Timestamp", "Open", "High", "Low", "Close", "Volume"])
             df = pd.DataFrame(entries, index=[i for i in range(numSamples)], columns=["Timestamp", "Close", "Volume"])
             self._dataAsDataFrames[ticker] = df
             self._dataAsListOfDicts[ticker] = listOfDicts
@@ -140,7 +138,6 @@ class HistoricalBinanceDataObtainer(StockDataObtainer):
             price = price[-1]
 
         print("Price at " + str(d_aware) + ": " + str(price))
-
         return price
 
     def obtainVolume(self, ticker: str) -> float:
@@ -159,27 +156,25 @@ class HistoricalBinanceDataObtainer(StockDataObtainer):
 
     def obtainPrices(self, ticker: str, numberOfPrices=SAMPLES_OF_DATA_TO_LOOK_AT) -> List[float]:
         now = datetime.now()
-        diff = (now - self._startTime) * self._fastForwardAmount
+        diff = (now - self._simulationStartTime) * self._fastForwardAmount
         date = self.dateOfStart + diff
         start_date_to_use = datetime(date.year, date.month, date.day,
                                      hour=date.hour, minute=date.minute,
                                      second=date.second)
         timezone = pytz.timezone(self.timezone)
         d_aware = timezone.localize(start_date_to_use)
-        return self._getValues(ticker, ["Close"], d_aware, pricesToObtain=numberOfPrices)["Close"]
+        return self._getValues(ticker, ["Close"], d_aware)["Close"]
 
     def obtainPricesAndVolumes(self, ticker: str, numberOfPrices=SAMPLES_OF_DATA_TO_LOOK_AT):
         now = datetime.now()
-        diff = (now - self._startTime) * self._fastForwardAmount
+        diff = (now - self._simulationStartTime) * self._fastForwardAmount
         date = self.dateOfStart + diff
         start_date_to_use = datetime(date.year, date.month, date.day,
                                      hour=date.hour, minute=date.minute,
                                      second=date.second)
         timezone = pytz.timezone(self.timezone)
         d_aware = timezone.localize(start_date_to_use)
-        # print("Obtaining price and volume data of " + ticker + " at " + str(d_aware) + ".")
         values = self._getValues(ticker, ["Close", "Volume"], d_aware, numberOfPrices * SECONDS_BETWEEN_SAMPLES)
-        # values = self._getValuesFromDataframe(self._dataAsDataFrames[ticker], ["High", "Volume"], d_aware)
 
         if len(values["Close"]) != 0:
             # print("Price of " + ticker + ": " + str(values["Close"][-1]))
@@ -187,13 +182,11 @@ class HistoricalBinanceDataObtainer(StockDataObtainer):
         else:
             print("Price of " + ticker + ": 0 prices!")
 
-        time2 = datetime.now()
-        # print("obtainPricesAndVolumes took " + str(time2 - now) + ".")
         return values["Close"], values["Volume"]
 
     def obtainMinutePricesAndVolumes(self, ticker: str, numberOfPrices=SAMPLES_OF_DATA_TO_LOOK_AT):
         now = datetime.now()
-        diff = (now - self._startTime) * self._fastForwardAmount
+        diff = (now - self._simulationStartTime) * self._fastForwardAmount
         date = self.dateOfStart + diff
         # Don't use second=date.second:
         start_date_to_use = datetime(date.year, date.month, date.day,
@@ -285,7 +278,7 @@ class HistoricalBinanceDataObtainer(StockDataObtainer):
 
     def _getCurrentHistoricalDate(self):
         now = datetime.now()
-        diff = (now - self._startTime) * self._fastForwardAmount
+        diff = (now - self._simulationStartTime) * self._fastForwardAmount
         return self.dateOfStart + diff
 
     def _generateData(self, row, timing):

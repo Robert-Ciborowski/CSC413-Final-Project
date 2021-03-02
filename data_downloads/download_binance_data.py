@@ -1,12 +1,12 @@
 # Name: Download Binance Data
 # Author: Robert Ciborowski
 # Date: 18/04/2020
-# Description: Downloads historical data from Binance.
+# Description: A script which downloads historical data from Binance.
 
 # credit to https://medium.com/swlh/retrieving-full-historical-data-for-every-cryptocurrency-on-binance-bitmex-using-the-python-apis-27b47fd8137f
 # for some of the functions in this script.
-from typing import List
 
+from typing import List
 import pandas as pd
 import math
 import os.path
