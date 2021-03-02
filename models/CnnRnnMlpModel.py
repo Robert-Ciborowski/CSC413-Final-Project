@@ -68,13 +68,16 @@ class CnnRnnMlpModel:
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))
         # self.model = tf.keras.models.Sequential()
         # self.model.add(input_seq)
-        layer = layers.Conv1D(filters=16, kernel_size=2, activation='relu',
+        layer = layers.Conv1D(filters=24, kernel_size=2, activation='relu',
                               input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(
             input_layer)
-        layer = layers.Conv1D(filters=16, kernel_size=4, activation='relu',
+        layer = layers.Conv1D(filters=24, kernel_size=4, activation='relu',
                           input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(input_layer)
-        layer = layers.Conv1D(filters=16, kernel_size=8, activation='relu',
+        layer = layers.Conv1D(filters=24, kernel_size=8, activation='relu',
                               input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
+        layer = layers.Conv1D(filters=24, kernel_size=6, activation='relu',
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(
+            layer)
         # layer = layers.Conv1D(filters=16, kernel_size=32, activation='relu',
         #                       input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
         # layer = layers.Conv1D(filters=16, kernel_size=64, activation='relu',
@@ -82,43 +85,44 @@ class CnnRnnMlpModel:
         #     layer)
         # layer = layers.AveragePooling1D(pool_size=2)(layer)
         layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(SAMPLES_OF_DATA_TO_LOOK_AT, input_shape=layer.shape))(layer)
-        layer = layers.Dense(100, activation='relu')(layer)
-        layer = layers.Dense(20, activation='relu')(layer)
+        layer = layers.Dense(400, activation='relu')(layer)
+        layer = layers.Dense(175, activation='relu')(layer)
+        layer = layers.Dense(150, activation='relu')(layer)
         # layer = layers.Dense(20, activation='relu')(layer)
         # layer = layers.Dense(20, activation='relu')(layer)
         # layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
 
         # Median
-        medianDense = layers.Dense(20, activation='relu')(layer)
-        medianDense = layers.Dense(10, activation='relu')(medianDense)
+        medianDense = layers.Dense(80, activation='relu')(layer)
+        medianDense = layers.Dense(20, activation='relu')(medianDense)
         medianDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(medianDense)
         medianFinal = layers.Dense(1, activation='relu', name="median")(medianDropout)
 
         # 25th Percentile
         # twentyFifthConcat = tf.concat([layer, medianDense], 1)
-        twentyFifthDense = layers.Dense(20, activation='relu')(layer)
-        twentyFifthDense = layers.Dense(10, activation='relu')(twentyFifthDense)
+        twentyFifthDense = layers.Dense(80, activation='relu')(layer)
+        twentyFifthDense = layers.Dense(20, activation='relu')(twentyFifthDense)
         twentyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(twentyFifthDense)
         twentyFifthFinal = layers.Dense(1, activation='relu', name="25th-percentile")(twentyFifthDropout)
 
         # Min
         # minConcat = tf.concat([layer, twentyFifthDense], 1)
-        minDense = layers.Dense(20, activation='relu')(layer)
-        minDense = layers.Dense(10, activation='relu')(minDense)
+        minDense = layers.Dense(80, activation='relu')(layer)
+        minDense = layers.Dense(20, activation='relu')(minDense)
         twentyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(minDense)
         minFinal = layers.Dense(1, activation='relu', name="min")(twentyFifthDropout)
 
         # 75th Percentile
         # seventyFifthConcat = tf.concat([medianDense, layer], 1)
-        seventyFifthDense = layers.Dense(20, activation='relu')(layer)
-        seventyFifthDense = layers.Dense(10, activation='relu')(seventyFifthDense)
+        seventyFifthDense = layers.Dense(80, activation='relu')(layer)
+        seventyFifthDense = layers.Dense(20, activation='relu')(seventyFifthDense)
         seventyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(seventyFifthDense)
         seventyFifthFinal = layers.Dense(1, activation='relu', name="75th-percentile")(seventyFifthDropout)
 
         # Max
         # maxConcat = tf.concat([seventyFifthDense, layer], 1)
-        maxDense = layers.Dense(20, activation='relu')(layer)
-        maxDense = layers.Dense(10, activation='relu')(maxDense)
+        maxDense = layers.Dense(80, activation='relu')(layer)
+        maxDense = layers.Dense(20, activation='relu')(maxDense)
         maxDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(maxDense)
         maxFinal = layers.Dense(1, activation='relu', name="max")(maxDropout)
 
