@@ -6,8 +6,8 @@ from models.PerformanceReporter import PerformanceReporter
 
 def testPerformance():
     datasetLoader = DatasetLoader()
-    data, labels = datasetLoader.load(shuffle=False)
-
+    trainData, trainLabels = datasetLoader.load(path="../data_set/final-train-dataset.csv", shuffle=False)
+    testData, testLabels = datasetLoader.load(path="../data_set/final-test-dataset.csv", shuffle=False)
     model = CnnRnnMlpModel(tryUsingGPU=True)
 
     # Hyperparameters!
@@ -21,11 +21,11 @@ def testPerformance():
                                 decayRate=decayRate, decayStep=decayStep))
     model.createModel()
     model.loadWeights()
-    predictions = model.predict(data, concatenate=True)
+    predictions = model.predict(trainData, concatenate=True)
 
     reporter = PerformanceReporter()
-    reporter.reportOnPoorPredictions(predictions, labels, errorForPoor=0.01)
-
+    reporter.reportOnPoorPredictions(predictions, trainLabels, errorForPoor=0.01)
+    reporter.reportPerformanceOnDataset(model, testData, testLabels)
 
 if __name__ == "__main__":
     testPerformance()

@@ -1,6 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+from models.CnnRnnMlpModel import CnnRnnMlpModel
+
+
 class PerformanceReporter:
     def __init__(self):
         pass
@@ -55,6 +58,10 @@ class PerformanceReporter:
         plt.show()
 
         return mins, twentyFifths, medians, seventyFifths, maxes
+
+    def reportPerformanceOnDataset(self, model: CnnRnnMlpModel, features, labels):
+        performance = model.evaluate(features, labels)
+        print(performance)
 
 
     def _compare(self, prediction, label):

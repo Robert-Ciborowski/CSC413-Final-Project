@@ -2,6 +2,10 @@
 # Author: Robert Ciborowski
 # Date: 18/04/2020
 # Description: A script which downloads historical data from Binance.
+#              It can also update current datasets with new data.
+#
+#              See the if __name__ == "__main__" at the bottom of this
+#              file.
 
 # credit to https://medium.com/swlh/retrieving-full-historical-data-for-every-cryptocurrency-on-binance-bitmex-using-the-python-apis-27b47fd8137f
 # for some of the functions in this script.
@@ -10,34 +14,34 @@ from typing import List
 import pandas as pd
 import math
 import os.path
-import time
 from binance.client import Client
 from datetime import timedelta, datetime
 from dateutil import parser
 
-### API
+# Random API stuff: ignore
 binance_api_key = "REDACTED"
 binance_api_secret = "REDACTED"
 
-### CONSTANTS
+# Constants and globals.
 binsizes = {"1m": 1, "5m": 5, "1h": 60, "1d": 1440}
 batch_size = 750
 binance_client = Client(api_key=binance_api_key, api_secret=binance_api_secret)
 
-### FUNCTIONS
-def minutes_of_new_data(symbol, kline_size, data):
+def minutesOfNewData(symbol, kline_size, data):
     if len(data) > 0:  old = parser.parse(data["timestamp"].iloc[-1])
     old = datetime.strptime('1 Jan 2017', '%d %b %Y')
     new = pd.to_datetime(binance_client.get_klines(symbol=symbol, interval=kline_size)[-1][0], unit='ms')
     return old, new
 
-def get_all_binance(symbol, kline_size, save = False, oldest=None):
+def getAllBinance(symbol, kline_size, save = False, oldest=None):
     filename = '%s-%s-data.csv' % (symbol, kline_size)
     if os.path.isfile(filename): data_df = pd.read_csv(filename)
     else: data_df = pd.DataFrame()
-    oldest_point, newest_point = minutes_of_new_data(symbol, kline_size, data_df)
+    oldest_point, newest_point = minutesOfNewData(symbol, kline_size, data_df)
     if oldest is not None:
         oldest_point = oldest
+    elif len(data_df) > 0:
+        oldest_point = pd.to_datetime(data_df["timestamp"].iloc[-1])
     delta_min = (newest_point - oldest_point).total_seconds()/60
     available_data = math.ceil(delta_min/binsizes[kline_size])
     if oldest_point == datetime.strptime('1 Jan 2017', '%d %b %Y'): print('Downloading all available %s data for %s. Be patient..!' % (kline_size, symbol))
@@ -62,33 +66,20 @@ def downloadBinanceDataToCSV():
 
     for ticker in tickers:
         symbol = ticker["symbol"]
-
-        if fileExists(symbol + "-1m-data.csv"):
-            print("Skipping " + symbol + ", its already downloaded!")
-            continue
-
         print("Obtaining " + symbol + "...")
-        get_all_binance(symbol, "1m", save=True)
+        getAllBinance(symbol, "1m", save=True)
         print("Obtained " + symbol + ".")
 
 def downloadSpecificBinanceDataToCSV(symbol: str):
-    if fileExists(symbol + "-1m-data.csv"):
-        print("Skipping " + symbol + ", its already downloaded!")
-
     print("Obtaining " + symbol + "...")
-    get_all_binance(symbol, "1m", save=True)
+    getAllBinance(symbol, "1m", save=True)
     print("Obtained " + symbol + ".")
 
 def downloadSpecificBinanceDataToCSV(tickers: List, oldest=None):
     for symbol in tickers:
-        if fileExists(symbol + "-1m-data.csv"):
-            print("Skipping " + symbol + ", its already downloaded!")
-            continue
-
         print("Obtaining " + symbol + "...")
-        get_all_binance(symbol, "1m", save=True, oldest=oldest)
+        getAllBinance(symbol, "1m", save=True, oldest=oldest)
         print("Obtained " + symbol + ".")
-
 
 if __name__ == "__main__":
     tickers = [
@@ -97,8 +88,8 @@ if __name__ == "__main__":
         "ETHUSDT"
     ]
 
+    # This either downloads our updates our dataset.
     # downloadSpecificBinanceDataToCSV(tickers, oldest=datetime(year=2020, month=6, day=1))
     downloadSpecificBinanceDataToCSV(tickers)
-
     # downloadBinanceDataToCSV()
     # downloadSpecificBinanceDataToCSV("OAXBTC")
