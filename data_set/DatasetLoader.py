@@ -7,7 +7,7 @@ class DatasetLoader:
     def __init__(self):
         pass
 
-    def load(self, path="../data_set/final-dataset.csv", shuffle=False):
+    def load(self, path="../data_set/final-train-dataset.csv", shuffle=False):
         data = []
         labels = []
 
