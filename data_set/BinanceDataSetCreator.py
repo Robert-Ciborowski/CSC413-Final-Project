@@ -122,14 +122,15 @@ class BinanceDataSetCreator:
 
         # We will gather the next day distribution characteristics, so we start
         # at tomorrow.
-        date = startDate + self._dataTimeInterval * self._datapointsPerDay
+        date = startDate + timedelta(days=self.numberOfSamples // self._datapointsPerDay)
 
         while date < endDate:
             print("Processing", date, "/", endDate)
             startIndex = df.index[df["Timestamp"] == date].tolist()
 
             if len(startIndex) == 0:
-                date += self._dataTimeInterval * self._datapointsPerDay
+                # date += self._dataTimeInterval * self._datapointsPerDay
+                date += self._dataTimeInterval
                 outputMedians.append(outputMedians[-1])
                 output75thPercentiles.append(output75thPercentiles[-1])
                 output25thPercentiles.append(output25thPercentiles[-1])
@@ -142,7 +143,8 @@ class BinanceDataSetCreator:
                 df["Timestamp"] == date + self._dataTimeInterval * self._datapointsPerDay].tolist()
 
             if len(endIndex) == 0:
-                date += self._dataTimeInterval * self._datapointsPerDay
+                # date += self._dataTimeInterval * self._datapointsPerDay
+                date += self._dataTimeInterval
                 outputMedians.append(outputMedians[-1])
                 output75thPercentiles.append(output75thPercentiles[-1])
                 output25thPercentiles.append(output25thPercentiles[-1])
@@ -157,28 +159,36 @@ class BinanceDataSetCreator:
             output25thPercentiles.append(data["Close"].quantile(0.25))
             outputMaxes.append(data["Close"].max())
             outputMins.append(data["Close"].min())
-            date += self._dataTimeInterval * self._datapointsPerDay
+            # date += self._dataTimeInterval * self._datapointsPerDay
+            date += self._dataTimeInterval
 
         stock = StockDataFrame({
             'close': closeMeans
         })
 
         # The standard RSI is 14 day.
-        rsis = (stock["rsi:192"] / 100).tolist()
-        mas = stock["macd"].tolist()
-        bollUppers = stock["boll.upper"].tolist()
-        bollLowers = stock["boll.lower"].tolist()
+        rsis = (stock["rsi:112"] / 100).tolist()
+        rsis2 = (stock["rsi:56"] / 100).tolist()
+        rsis3 = (stock["rsi:28"] / 100).tolist()
+        mas = stock["macd:96,208"].tolist()
+        mas2 = stock["macd:48,104"].tolist()
+        bollUppers = stock["boll.upper:160"].tolist()
+        bollLowers = stock["boll.lower:160"].tolist()
 
         import math
         rsis = [0 if math.isnan(x) else x for x in rsis]
+        rsis2 = [0 if math.isnan(x) else x for x in rsis2]
+        rsis3 = [0 if math.isnan(x) else x for x in rsis3]
         mas = [0 if math.isnan(x) else x for x in mas]
+        mas2 = [0 if math.isnan(x) else x for x in mas2]
         bollUppers = [0 if math.isnan(x) else x for x in bollUppers]
         bollLowers = [0 if math.isnan(x) else x for x in bollLowers]
 
         outputIndex = 0
         entryAmount = int((len(closeMeans) - self.numberOfSamples - 1))
 
-        for i in range(0, len(closeMeans) - self.numberOfSamples - 1, self._datapointsPerDay):
+        # for i in range(0, len(closeMeans) - self.numberOfSamples - 1, self._datapointsPerDay):
+        for i in range(0, len(closeMeans) - self.numberOfSamples - 1, 1):
             print("Percent of entries created: " + str(i / entryAmount * 100) + "%")
             close = closeMeans[i : i + self.numberOfSamples]
             meanClose = sum(close) / len(close)
@@ -191,15 +201,24 @@ class BinanceDataSetCreator:
 
             volume = volumeMeans[i : i + self.numberOfSamples]
             rsi = rsis[i : i + self.numberOfSamples]
+            rsi2 = rsis2[i: i + self.numberOfSamples]
+            rsi3 = rsis3[i: i + self.numberOfSamples]
             ma = mas[i : i + self.numberOfSamples]
+            ma2 = mas2[i : i + self.numberOfSamples]
             maxMA = max(mas)
             ma = [((m / maxMA) + 1) / 2 for m in ma]
             bollUpper = bollUppers[i: i + self.numberOfSamples]
             maxBollUpper = max(bollUpper)
-            bollUpper = [m / maxBollUpper for m in bollUpper]
+
+            if maxBollUpper != 0:
+                bollUpper = [m / maxBollUpper for m in bollUpper]
+
             bollLower = bollLowers[i: i + self.numberOfSamples]
             maxBollLower = max(bollLower)
-            bollLower = [m / maxBollLower for m in bollLower]
+
+            if maxBollLower != 0:
+                bollLower = [m / maxBollLower for m in bollLower]
+
             maxClose = max(close)
             maxVolume = max(volume)
 
@@ -209,7 +228,7 @@ class BinanceDataSetCreator:
             for j in range(len(volume)):
                 volume[j] /= maxVolume
 
-            self.inputData.append([close, volume, rsi, ma, bollUpper, bollLower])
+            self.inputData.append([close, volume, rsi, rsi2, rsi3, ma, ma2, bollUpper, bollLower])
             output75thPercentile = output75thPercentiles[outputIndex] / meanClose
             output25thPercentile = output25thPercentiles[outputIndex] / meanClose
             outputMax = outputMaxes[outputIndex] / meanClose

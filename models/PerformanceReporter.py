@@ -60,8 +60,8 @@ class PerformanceReporter:
         return mins, twentyFifths, medians, seventyFifths, maxes
 
     def reportPerformanceOnDataset(self, model: CnnRnnMlpModel, features, labels):
-        performance = model.evaluate(features, labels)
-        print(performance)
+        print("The model's performance on your dataset is: (reportPerformanceOnDataset)")
+        return model.evaluate(features, labels)
 
 
     def _compare(self, prediction, label):

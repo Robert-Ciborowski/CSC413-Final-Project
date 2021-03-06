@@ -38,8 +38,14 @@ class HistoricalDataObtainer(StockDataObtainer):
         self.timezone = "Etc/GMT-0"
         self._fastForwardAmount = fastForwardAmount
         timezone = pytz.timezone(self.timezone)
-        self.dateOfStart = timezone.localize(dateOfStart)
-        self.dateOfEnd = timezone.localize(dateOfEnd)
+
+        try:
+            self.dateOfStart = timezone.localize(dateOfStart)
+            self.dateOfEnd = timezone.localize(dateOfEnd)
+        except:
+            # We are already localized to some timezone. Hmmm...
+            self.dateOfStart = dateOfStart
+            self.dateOfEnd = dateOfEnd
 
     def setStartTimeToNow(self):
         self._simulationStartTime = datetime.now()

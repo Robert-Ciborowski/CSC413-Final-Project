@@ -32,10 +32,17 @@ class DatasetLoader:
                                     float(row[
                                               i + SAMPLES_OF_DATA_TO_LOOK_AT * 4]),
                                     float(row[
-                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 5])))
+                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 5]),
+                                    float(row[
+                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 6]),
+                                    float(row[
+                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 7]),
+                                    float(row[
+                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 8])
+                                    ))
 
                 data.append(np.array(entries))
-                label = [float(row[SAMPLES_OF_DATA_TO_LOOK_AT * 6 + i]) for i in
+                label = [float(row[SAMPLES_OF_DATA_TO_LOOK_AT * 9 + i]) for i in
                          range(5)]
                 labels.append(label)
 

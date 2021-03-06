@@ -25,6 +25,8 @@ def testPerformance():
 
     reporter = PerformanceReporter()
     reporter.reportOnPoorPredictions(predictions, trainLabels, errorForPoor=0.01)
+
+    print("The model's performance on the test set.")
     reporter.reportPerformanceOnDataset(model, testData, testLabels)
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@ class CnnRnnMlpModel:
 
     _metrics: List
     _NUMBER_OF_SAMPLES = SAMPLES_OF_DATA_TO_LOOK_AT
+    _numberOfInputChannels = 9
 
     def __init__(self, tryUsingGPU=False):
         super().__init__()
@@ -36,19 +37,18 @@ class CnnRnnMlpModel:
         # The following lines adjust the granularity of reporting.
         pd.options.display.max_rows = 10
         pd.options.display.float_format = "{:.1f}".format
-        tf.keras.backend.set_floatx('float32')
+        tf.keras.backend.set_floatx('float64')
 
     def setup(self, hyperparameters: Hyperparameters):
         self._buildMetrics()
         self.hyperparameters = hyperparameters
 
     """
-    Precondition: prices is a pandas dataframe or series.
+    Precondition: prices is a numpy 3d array.
     """
     def predict(self, data, concatenate=False) -> float:
         # This whole function needs to be remade!!!
         time1 = datetime.now()
-        # data = np.array([data])
         result = self.model.predict(data)
         # result = self.model(data).numpy()[0][0]
         time2 = datetime.now()
@@ -59,24 +59,29 @@ class CnnRnnMlpModel:
             result = np.concatenate(result, axis=1)
 
         return result
-    """
-    Creates a brand new neural network for this model.
-    """
+
+    def makePricePredictionForTommorrow(self, data, meanPriceFifteenDays) -> float:
+        data = np.array([data])
+        predictions = self.predict(data)
+        results = []
+
+        for prediction in predictions:
+            results.append(prediction[0][0] * meanPriceFifteenDays)
+
+        return results
 
     def createModel(self):
+        """
+        Creates a brand new neural network for this model.
+        """
         # Should go over minutes, not seconds
-        input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))
-        # self.model = tf.keras.models.Sequential()
-        # self.model.add(input_seq)
-        layer = layers.Conv1D(filters=24, kernel_size=2, activation='relu',
-                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(
-            input_layer)
+        input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
         layer = layers.Conv1D(filters=24, kernel_size=4, activation='relu',
-                          input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(input_layer)
+                          input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))(input_layer)
         layer = layers.Conv1D(filters=24, kernel_size=8, activation='relu',
-                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
-        layer = layers.Conv1D(filters=24, kernel_size=6, activation='relu',
-                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))(layer)
+        layer = layers.Conv1D(filters=24, kernel_size=12, activation='relu',
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))(
             layer)
         # layer = layers.Conv1D(filters=16, kernel_size=32, activation='relu',
         #                       input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT, 6))(layer)
@@ -99,30 +104,34 @@ class CnnRnnMlpModel:
         medianFinal = layers.Dense(1, activation='relu', name="median")(medianDropout)
 
         # 25th Percentile
-        # twentyFifthConcat = tf.concat([layer, medianDense], 1)
-        twentyFifthDense = layers.Dense(80, activation='relu')(layer)
-        twentyFifthDense = layers.Dense(20, activation='relu')(twentyFifthDense)
+        twentyFifthConcat = tf.concat([layer, medianFinal], 1)
+        twentyFifthDense = layers.Dense(80, activation='relu')(twentyFifthConcat)
+        twentyFifthConcat2 = tf.concat([twentyFifthDense, medianFinal], 1)
+        twentyFifthDense = layers.Dense(20, activation='relu')(twentyFifthConcat2)
         twentyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(twentyFifthDense)
         twentyFifthFinal = layers.Dense(1, activation='relu', name="25th-percentile")(twentyFifthDropout)
 
         # Min
-        # minConcat = tf.concat([layer, twentyFifthDense], 1)
-        minDense = layers.Dense(80, activation='relu')(layer)
-        minDense = layers.Dense(20, activation='relu')(minDense)
+        minConcat = tf.concat([layer, twentyFifthFinal], 1)
+        minDense = layers.Dense(80, activation='relu')(minConcat)
+        minConcat2 = tf.concat([minDense, twentyFifthFinal], 1)
+        minDense = layers.Dense(20, activation='relu')(minConcat2)
         twentyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(minDense)
         minFinal = layers.Dense(1, activation='relu', name="min")(twentyFifthDropout)
 
         # 75th Percentile
-        # seventyFifthConcat = tf.concat([medianDense, layer], 1)
-        seventyFifthDense = layers.Dense(80, activation='relu')(layer)
-        seventyFifthDense = layers.Dense(20, activation='relu')(seventyFifthDense)
+        seventyFifthConcat = tf.concat([medianFinal, medianDense], 1)
+        seventyFifthDense = layers.Dense(80, activation='relu')(seventyFifthConcat)
+        seventyFifthConcat2 = tf.concat([medianFinal, seventyFifthDense], 1)
+        seventyFifthDense = layers.Dense(20, activation='relu')(seventyFifthConcat2)
         seventyFifthDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(seventyFifthDense)
         seventyFifthFinal = layers.Dense(1, activation='relu', name="75th-percentile")(seventyFifthDropout)
 
         # Max
-        # maxConcat = tf.concat([seventyFifthDense, layer], 1)
-        maxDense = layers.Dense(80, activation='relu')(layer)
-        maxDense = layers.Dense(20, activation='relu')(maxDense)
+        maxConcat = tf.concat([seventyFifthFinal, layer], 1)
+        maxDense = layers.Dense(80, activation='relu')(maxConcat)
+        maxConcat2 = tf.concat([seventyFifthFinal, layer], 1)
+        maxDense = layers.Dense(20, activation='relu')(maxConcat2)
         maxDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(maxDense)
         maxFinal = layers.Dense(1, activation='relu', name="max")(maxDropout)
 
@@ -133,9 +142,9 @@ class CnnRnnMlpModel:
         self.model.compile(loss="mean_squared_error", loss_weights=lossWeights,
                            optimizer=tf.keras.optimizers.Adam(lr=self.hyperparameters.learningRate),
                            metrics=self._metrics)
-        tf.keras.utils.plot_model(self.model,
-                                  "crypto_model.png",
-                                  show_shapes=True)
+        # tf.keras.utils.plot_model(self.model,
+        #                           "crypto_model.png",
+        #                           show_shapes=True)
 
     def trainModel(self, features, labels, validationSplit: float):
         """Train the model by feeding it data."""

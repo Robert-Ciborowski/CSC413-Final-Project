@@ -11,9 +11,10 @@ if __name__ == "__main__":
         HistoricalDataObtainer
 
     listOfStocks = [
-        # "LTCUSDT"
-        "BTCUSDT"
+        "LTCUSDT"
+        # "BTCUSDT"
         # "SPY"
+        # "EUR"
     ]
 
     # The training dataset ranges from startDate to trainingEndDate.

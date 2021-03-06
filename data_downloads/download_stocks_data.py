@@ -6,11 +6,14 @@
 #              the correct data (US Securities subscriptions are not free).
 
 from datetime import datetime
-from InteractiveBrokersDownloader import InteractiveBrokersDownloader
+
+from data_downloads.InteractiveBrokersDownloader import \
+    InteractiveBrokersDownloader
 
 if __name__ == "__main__":
-    startDate = datetime(day=2, month=2, year=2004, hour=0, minute=0)
+    # startDate = datetime(day=2, month=2, year=2004, hour=0, minute=0)
+    startDate = datetime(day=1, month=10, year=2014, hour=0, minute=0)
     endDate = datetime(day=26, month=2, year=2021, hour=0, minute=0)
     # endDate = datetime(day=28, month=2, year=2021, hour=0, minute=0)
     downloader = InteractiveBrokersDownloader()
-    downloader.download("SPY", "STK", "SMART", "USD", startDate, endDate)
+    downloader.download("JPXN", "STK", "SMART", "USD", startDate, endDate)
