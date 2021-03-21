@@ -13,9 +13,9 @@ def train():
     data, labels = datasetLoader.load(shuffle=False)
 
     # Hyperparameters!
-    learningRate = 0.001
-    epochs = 300
-    batchSize = 230
+    learningRate = 0.005
+    epochs = 3
+    batchSize = 30
     decayRate = 0.03
     decayStep = 1.0
     dropout = 0.1
@@ -27,7 +27,7 @@ def train():
     epochs, hist = model.trainModel(data, labels, 0.15)
     list_of_metrics_to_plot = model.listOfMetrics
     model.plotCurve(epochs, hist, list_of_metrics_to_plot)
-    model.exportWeights()
+    model.save()
 
 
 if __name__ == "__main__":

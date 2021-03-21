@@ -11,8 +11,8 @@ if __name__ == "__main__":
         HistoricalDataObtainer
 
     listOfStocks = [
-        "LTCUSDT"
-        # "BTCUSDT"
+        # "LTCUSDT"
+        "BTCUSDT"
         # "SPY"
         # "EUR"
     ]
@@ -40,12 +40,12 @@ if __name__ == "__main__":
     # dataSetCreator = BinanceDataSetCreator(historicalObtainer, dataInterval="day", medianWithin=1.1)
     # dataSetCreator = BinanceDataSetCreator(historicalObtainer, dataInterval="hour")
     # dataSetCreator = BinanceDataSetCreator(historicalObtainer, dataInterval="2 hour")
-    dataSetCreator = BinanceDataSetCreator(historicalObtainer, dataInterval="3 hour")
+    dataSetCreator = BinanceDataSetCreator(historicalObtainer, dataInterval="hour", dayByDay=False)
     print("Analyzing historical stock data for training dataset...")
     dataSetCreator.createDataset(listOfStocks[0], startDate, trainingEndDate)
     dataSetCreator.exportToCSV("final-train-dataset.csv")
 
-    dataSetCreator = BinanceDataSetCreator(historicalObtainer, dataInterval="3 hour")
+    dataSetCreator = BinanceDataSetCreator(historicalObtainer, dataInterval="hour", dayByDay=False)
     print("Analyzing historical stock data for testing dataset...")
     dataSetCreator.createDataset(listOfStocks[0], trainingEndDate, endDate)
     dataSetCreator.exportToCSV("final-test-dataset.csv")

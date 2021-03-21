@@ -38,7 +38,7 @@ def testPerformance():
     model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize,
                                 decayRate=decayRate, decayStep=decayStep))
     model.createModel()
-    model.loadWeights()
+    model.load()
 
     inputData = prepareData(listOfStocks[0], historicalObtainer, startDate, now)
     inputData = np.array(inputData[-1]).T

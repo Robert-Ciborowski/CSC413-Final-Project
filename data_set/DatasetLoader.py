@@ -43,7 +43,7 @@ class DatasetLoader:
 
                 data.append(np.array(entries))
                 label = [float(row[SAMPLES_OF_DATA_TO_LOOK_AT * 9 + i]) for i in
-                         range(5)]
+                         range(7)]
                 labels.append(label)
 
         if shuffle:

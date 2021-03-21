@@ -20,7 +20,7 @@ def testPerformance():
     model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize,
                                 decayRate=decayRate, decayStep=decayStep))
     model.createModel()
-    model.loadWeights()
+    model.load()
     predictions = model.predict(trainData, concatenate=True)
 
     reporter = PerformanceReporter()
