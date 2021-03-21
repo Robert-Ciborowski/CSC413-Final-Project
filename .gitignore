@@ -5,7 +5,9 @@ __pycache__/
 
 data_downloads/*.csv
 venv/
+# This isn't working for the test dataset. Why?
 data_set/*.csv
+
 
 # C extensions
 *.so

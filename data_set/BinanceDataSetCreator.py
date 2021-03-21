@@ -12,9 +12,12 @@ from stock_data import HistoricalDataObtainer
 import csv
 from scipy import stats
 
+from util.Constants import DAYS_IN_AN_INPUT
+
+
 class BinanceDataSetCreator:
     dataObtainer: HistoricalDataObtainer
-    numberOfSamples: int
+    _numberOfSamples: int
     inputData: List
     outputData: List
     medianWithin: float
@@ -40,25 +43,23 @@ class BinanceDataSetCreator:
         """
         self.dataObtainer = dataObtainer
         self.medianWithin = medianWithin
-        self.dayByDay = True
+        self.dayByDay = dayByDay
 
         if dataInterval == "day":
             self._dataTimeInterval = timedelta(days=1)
             self._datapointsPerDay = 1
-            self.numberOfSamples = 30
         elif dataInterval == "2 hour":
             self._dataTimeInterval = timedelta(hours=2)
             self._datapointsPerDay = 12
-            self.numberOfSamples = 15 * 12
         elif dataInterval == "3 hour":
             self._dataTimeInterval = timedelta(hours=3)
             self._datapointsPerDay = 8
-            self.numberOfSamples = 15 * 8
         else:
             # 1 hour
             self._dataTimeInterval = timedelta(hours=1)
             self._datapointsPerDay = 24
-            self.numberOfSamples = 7 * 24
+
+        self._numberOfSamples = DAYS_IN_AN_INPUT * self._datapointsPerDay
 
     def exportToCSV(self, path: str, pathPrefix=""):
         if len(self.inputData) == 0:
@@ -67,15 +68,20 @@ class BinanceDataSetCreator:
         try:
             with open(pathPrefix + path, 'w', newline='') as file:
                 writer = csv.writer(file)
-                writer.writerow(["Close-" + str(i) for i in range(self.numberOfSamples)]
-                                + ["Volume-" + str(i) for i in range(self.numberOfSamples)]
-                                + ["RSI-" + str(i) for i in range(self.numberOfSamples)]
-                                + ["MACD-" + str(i) for i in range(self.numberOfSamples)]
-                                + ["BollUpper-" + str(i) for i in range(self.numberOfSamples)]
-                                + ["BollLower-" + str(i) for i in range(self.numberOfSamples)]
+                writer.writerow(["Close-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["Volume-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["RSI-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["MACD-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["BollUpper-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["BollLower-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["15th-Percentile", "25th-Percentile",
                                    "35th-Percentile", "Median", "65th-Percentile",
                                    "75th-Percentile", "85th-Percentile"])
+
+                print("Length of input data", len(self.inputData))
+                print("Length of output data", len(self.outputData))
+                print("The values above should be the same!")
+                assert len(self.inputData) == len(self.outputData)
 
                 for i in range(len(self.inputData)):
                     data = []
@@ -149,7 +155,7 @@ class BinanceDataSetCreator:
 
         # We will gather the next day distribution characteristics, so we start
         # at tomorrow.
-        date = startDate + timedelta(days=self.numberOfSamples // self._datapointsPerDay)
+        date = startDate + timedelta(days=self._numberOfSamples // self._datapointsPerDay)
 
         if self.dayByDay:
             advanceAmount = timedelta(hours=24)
@@ -231,7 +237,7 @@ class BinanceDataSetCreator:
         bollLowers = [0 if math.isnan(x) else x for x in bollLowers]
 
         outputIndex = 0
-        entryAmount = int((len(closeMeans) - self.numberOfSamples - 1))
+        entryAmount = int((len(closeMeans) - self._numberOfSamples - 1))
 
         if self.dayByDay:
             advanceAmount = self._datapointsPerDay
@@ -239,9 +245,9 @@ class BinanceDataSetCreator:
             advanceAmount = 1
 
         # for i in range(0, len(closeMeans) - self.numberOfSamples - 1, self._datapointsPerDay):
-        for i in range(0, len(closeMeans) - self.numberOfSamples - 1, advanceAmount):
+        for i in range(0, len(closeMeans) - self._numberOfSamples - 1, advanceAmount):
             print("Percent of entries created: " + str(i / entryAmount * 100) + "%")
-            close = closeMeans[i : i + self.numberOfSamples]
+            close = closeMeans[i : i + self._numberOfSamples]
             meanClose = sum(close) / len(close)
             outputMedian = outputMedians[outputIndex] / meanClose
 
@@ -250,21 +256,21 @@ class BinanceDataSetCreator:
                 outputIndex += 1
                 continue
 
-            volume = volumeMeans[i : i + self.numberOfSamples]
-            rsi = rsis[i : i + self.numberOfSamples]
-            rsi2 = rsis2[i: i + self.numberOfSamples]
-            rsi3 = rsis3[i: i + self.numberOfSamples]
-            ma = mas[i : i + self.numberOfSamples]
-            ma2 = mas2[i : i + self.numberOfSamples]
+            volume = volumeMeans[i : i + self._numberOfSamples]
+            rsi = rsis[i : i + self._numberOfSamples]
+            rsi2 = rsis2[i: i + self._numberOfSamples]
+            rsi3 = rsis3[i: i + self._numberOfSamples]
+            ma = mas[i : i + self._numberOfSamples]
+            ma2 = mas2[i : i + self._numberOfSamples]
             maxMA = max(mas)
             ma = [((m / maxMA) + 1) / 2 for m in ma]
-            bollUpper = bollUppers[i: i + self.numberOfSamples]
+            bollUpper = bollUppers[i: i + self._numberOfSamples]
             maxBollUpper = max(bollUpper)
 
             if maxBollUpper != 0:
                 bollUpper = [m / maxBollUpper for m in bollUpper]
 
-            bollLower = bollLowers[i: i + self.numberOfSamples]
+            bollLower = bollLowers[i: i + self._numberOfSamples]
             maxBollLower = max(bollLower)
 
             if maxBollLower != 0:
@@ -279,66 +285,25 @@ class BinanceDataSetCreator:
             for j in range(len(volume)):
                 volume[j] /= maxVolume
 
-            self.inputData.append([close, volume, rsi, rsi2, rsi3, ma, ma2, bollUpper, bollLower])
-            # output15thPercentile = output15thPercentiles[outputIndex] / meanClose
-            # output25thPercentile = output25thPercentiles[outputIndex] / meanClose
-            # output35thPercentile = output35thPercentiles[outputIndex] / meanClose
-            # output65thPercentile = output65thPercentiles[outputIndex] / meanClose
-            # output7                close[j] /= maxClose
-
-            for j in range(len(volume)):
-                volume[j] /= maxVolume
-
-            self.inputData.append([close, volume, rsi, rsi2, rsi3, ma, ma2, bollUpper, bollLower])
             # output15thPercentile = output15thPercentiles[outputIndex] / meanClose
             # output25thPercentile = output25thPercentiles[outputIndex] / meanClose
             # output35thPercentile = output35thPercentiles[outputIndex] / meanClose
             # output65thPercentile = output65thPercentiles[outputIndex] / meanClose
             # output75thPercentile = output75thPercentiles[outputIndex] / meanClose
             # output85thPercentile = output85thPercentiles[outputIndex] / meanClose
+
+            for j in range(len(volume)):
+                volume[j] /= maxVolume
+
+            self.inputData.append([close, volume, rsi, rsi2, rsi3, ma, ma2, bollUpper, bollLower])
+
             output15thPercentile = output15thPercentiles[outputIndex]
             output25thPercentile = output25thPercentiles[outputIndex]
             output35thPercentile = output35thPercentiles[outputIndex]
-            output65thPercentile = output65thPercentiles[outputIndex]
-            output75thPercentile = output75thPercentiles[outputIndex]
-            output85thPercentile ercentile = output85thPercentiles[outputIndex]
-
-            # Use this if you want the model to predict if the price will be
-            # higher or lower (instead or predicting the exact mean)
-            # if output > 1.0:
-            #     output = output85thPercentiles[outputIndex]
-
-            # Use this if you want the model to predict if the price will be
-            # higher or lower (instead or predicting the exact mean)
-            # if output > 1.0:
-            #     output centile = output75thPercentiles[outputIndex] / meanClose
-            # output85thPercentile = output85thPercentiles[outputIndex] / meanClose
-            output15thPercentile = output15thPercentiles[outputIndex]
-            output25thPercentile = output25thPercentiles[outputIndex]
-            output35thPercentile = output35thPercentiles[outputIndex]
+            outputMedian = outputMedians[outputIndex]
             output65thPercentile = output65thPercentiles[outputIndex]
             output75thPercentile = output75thPercentiles[outputIndex]
             output85thPercentile = output85thPercentiles[outputIndex]
-
-            # Use this if you want the model to predict if the price will be
-            # higher or lower (instead or predicting the exact mean)
-            # if output > 1.0:
-            #     output 5thPercentile = output75thPercentiles[outputIndex] / meanClose
-            # output85thPercentile = output85thPercentiles[outputIndex] / meanClose
-            output15thPercentile = output15thPercentiles[outputIndex]
-            output25thPercentile = output25thPercentiles[outputIndex]
-            output35thPercentile = output35thPercentiles[outputIndex]
-            output65thPercentile = output65thPercentiles[outputIndex]
-            output75thPercentile = output75thPercentiles[outputIndex]
-            output85thPercentile = output85thPercentiles[outputIndex]
-
-            # Use this if you want the model to predict if the price will be
-            # higher or lower (instead or predicting the exact mean)
-            # if output > 1.0:
-            #     output = 1.0
-            # else:
-            #     output = 0.0
-
             self.outputData.append([output15thPercentile,
                                     output25thPercentile,
                                     output35thPercentile,
