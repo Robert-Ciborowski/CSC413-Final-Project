@@ -280,12 +280,57 @@ class BinanceDataSetCreator:
                 volume[j] /= maxVolume
 
             self.inputData.append([close, volume, rsi, rsi2, rsi3, ma, ma2, bollUpper, bollLower])
-            output15thPercentile = output15thPercentiles[outputIndex] / meanClose
-            output25thPercentile = output25thPercentiles[outputIndex] / meanClose
-            output35thPercentile = output35thPercentiles[outputIndex] / meanClose
-            output65thPercentile = output65thPercentiles[outputIndex] / meanClose
-            output75thPercentile = output75thPercentiles[outputIndex] / meanClose
-            output85thPercentile = output85thPercentiles[outputIndex] / meanClose
+            # output15thPercentile = output15thPercentiles[outputIndex] / meanClose
+            # output25thPercentile = output25thPercentiles[outputIndex] / meanClose
+            # output35thPercentile = output35thPercentiles[outputIndex] / meanClose
+            # output65thPercentile = output65thPercentiles[outputIndex] / meanClose
+            # output7                close[j] /= maxClose
+
+            for j in range(len(volume)):
+                volume[j] /= maxVolume
+
+            self.inputData.append([close, volume, rsi, rsi2, rsi3, ma, ma2, bollUpper, bollLower])
+            # output15thPercentile = output15thPercentiles[outputIndex] / meanClose
+            # output25thPercentile = output25thPercentiles[outputIndex] / meanClose
+            # output35thPercentile = output35thPercentiles[outputIndex] / meanClose
+            # output65thPercentile = output65thPercentiles[outputIndex] / meanClose
+            # output75thPercentile = output75thPercentiles[outputIndex] / meanClose
+            # output85thPercentile = output85thPercentiles[outputIndex] / meanClose
+            output15thPercentile = output15thPercentiles[outputIndex]
+            output25thPercentile = output25thPercentiles[outputIndex]
+            output35thPercentile = output35thPercentiles[outputIndex]
+            output65thPercentile = output65thPercentiles[outputIndex]
+            output75thPercentile = output75thPercentiles[outputIndex]
+            output85thPercentile ercentile = output85thPercentiles[outputIndex]
+
+            # Use this if you want the model to predict if the price will be
+            # higher or lower (instead or predicting the exact mean)
+            # if output > 1.0:
+            #     output = output85thPercentiles[outputIndex]
+
+            # Use this if you want the model to predict if the price will be
+            # higher or lower (instead or predicting the exact mean)
+            # if output > 1.0:
+            #     output centile = output75thPercentiles[outputIndex] / meanClose
+            # output85thPercentile = output85thPercentiles[outputIndex] / meanClose
+            output15thPercentile = output15thPercentiles[outputIndex]
+            output25thPercentile = output25thPercentiles[outputIndex]
+            output35thPercentile = output35thPercentiles[outputIndex]
+            output65thPercentile = output65thPercentiles[outputIndex]
+            output75thPercentile = output75thPercentiles[outputIndex]
+            output85thPercentile = output85thPercentiles[outputIndex]
+
+            # Use this if you want the model to predict if the price will be
+            # higher or lower (instead or predicting the exact mean)
+            # if output > 1.0:
+            #     output 5thPercentile = output75thPercentiles[outputIndex] / meanClose
+            # output85thPercentile = output85thPercentiles[outputIndex] / meanClose
+            output15thPercentile = output15thPercentiles[outputIndex]
+            output25thPercentile = output25thPercentiles[outputIndex]
+            output35thPercentile = output35thPercentiles[outputIndex]
+            output65thPercentile = output65thPercentiles[outputIndex]
+            output75thPercentile = output75thPercentiles[outputIndex]
+            output85thPercentile = output85thPercentiles[outputIndex]
 
             # Use this if you want the model to predict if the price will be
             # higher or lower (instead or predicting the exact mean)

@@ -14,7 +14,7 @@ def train():
 
     # Hyperparameters!
     learningRate = 0.005
-    epochs = 3
+    epochs = 300
     batchSize = 30
     decayRate = 0.03
     decayStep = 1.0
