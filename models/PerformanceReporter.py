@@ -1,8 +1,14 @@
+# Name: Performance Reporter
+# Author: Robert Ciborowski
+# Date: 25/03/2021
+# Description: Creates a nice report on the performance of a model.
+#
+#              This class no longer works due to changes in how our models work.
+#              This class needs to be recreated!!! Do not use it.
+
 import numpy as np
 from matplotlib import pyplot as plt
-
-from models.CnnRnnMlpModel import CnnRnnMlpModel
-
+from models.CnnRnnMlp.CnnRnnMlpModel import CnnRnnMlpModel
 
 class PerformanceReporter:
     def __init__(self):

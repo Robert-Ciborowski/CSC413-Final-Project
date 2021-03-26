@@ -1,5 +1,12 @@
+# Name: Test Performance
+# Author: Robert Ciborowski
+# Date: 25/03/2021
+# Description: Uses the PerformanceReporter class on a model.
+#
+#              Do not use this script until PerformanceReporter is finished!
+
 from data_set.DatasetLoader import DatasetLoader
-from models.CnnRnnMlpModel import CnnRnnMlpModel
+from models.CnnRnnMlp.CnnRnnMlpModel import CnnRnnMlpModel
 from models.Hyperparameters import Hyperparameters
 from models.PerformanceReporter import PerformanceReporter
 

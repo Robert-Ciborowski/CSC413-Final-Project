@@ -1,7 +1,7 @@
 # Name: Hyperparameters
 # Author: Robert Ciborowski
 # Date: 18/04/2020
-# Description: Stores hyperparameters to a machine learning model.
+# Description: Stores some hyperparameters for a machine learning model.
 
 class Hyperparameters:
     learningRate: float

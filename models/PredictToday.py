@@ -1,8 +1,7 @@
 import pytz
 from stock_pandas import StockDataFrame
 
-from data_set.BinanceDataSetCreator import BinanceDataSetCreator
-from models.CnnRnnMlpModel import CnnRnnMlpModel
+from models.CnnRnnMlp.CnnRnnMlpModel import CnnRnnMlpModel
 from models.Hyperparameters import Hyperparameters
 from datetime import datetime, timedelta
 
@@ -11,7 +10,7 @@ import numpy as np
 
 def testPerformance():
     # We are going to need data from 15 days ago up to and including yesterday.
-    # Make sure to download all the data using data_downloads/download_binance_data.py!
+    # Make sure to download all the data using data_downloads/DownloadBinanceData.py!
     # now = datetime.now()
     now = datetime(year=2021, month=3, day=3, hour=23, minute=35)
     timezone = "Etc/GMT-0"

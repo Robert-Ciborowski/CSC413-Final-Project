@@ -1,5 +1,10 @@
-import csv
+# Name: Dataset Loader
+# Author: Robert Ciborowski
+# Date: 25/03/2021
+# Description: Loads our datasets (either for training or testing) into
+#              convenient numpy arrays.
 
+import csv
 from util.Constants import SAMPLES_OF_DATA_TO_LOOK_AT
 import numpy as np
 
@@ -42,8 +47,6 @@ class DatasetLoader:
                                     ))
 
                 data.append(np.array(entries))
-                # label = [float(row[SAMPLES_OF_DATA_TO_LOOK_AT * 9 + i]) for i in
-                #          range(7)]
                 label = float(row[SAMPLES_OF_DATA_TO_LOOK_AT * 9])
                 labels.append(label)
 

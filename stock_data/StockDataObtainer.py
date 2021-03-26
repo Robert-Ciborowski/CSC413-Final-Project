@@ -2,7 +2,7 @@
 # Author: Robert Ciborowski
 # Date: 13/04/2020
 # Description: Keeps track of stock prices to the minute, simulated or real
-#              time.
+#              time. This is an abstract class.
 
 from datetime import datetime
 from typing import Dict, List

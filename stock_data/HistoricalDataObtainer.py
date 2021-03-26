@@ -3,7 +3,8 @@
 # Date: 13/04/2020
 # Description: Keeps track of historical stock prices from a csv. Also allows
 #              you to pretend that you are in the past and get "real time" data
-#              as time passes.
+#              as time passes. This class was taken from my PumpBot project and
+#              adapted for this project.
 
 import csv
 from datetime import datetime, timedelta
