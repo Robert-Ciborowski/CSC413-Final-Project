@@ -70,8 +70,11 @@ class BinanceDataSetCreator:
                 writer = csv.writer(file)
                 writer.writerow(["Close-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["Volume-" + str(i) for i in range(self._numberOfSamples)]
-                                + ["RSI-" + str(i) for i in range(self._numberOfSamples)]
-                                + ["MACD-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["RSI1-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["RSI2-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["RSI3-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["MACD1-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["MACD2-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["BollUpper-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["BollLower-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["15th-Percentile", "25th-Percentile",
@@ -107,8 +110,12 @@ class BinanceDataSetCreator:
         """
         timezone = "Etc/GMT-0"
         timezone = pytz.timezone(timezone)
-        startDate = timezone.localize(startDate)
+        outputStartDate = startDate
+        # We need to go back a little earlier to generate indicators such as RSI.
+        startDate -= timedelta(days=DAYS_IN_AN_INPUT + 60)
         endDate = timezone.localize(endDate)
+        startDate = timezone.localize(startDate)
+        outputStartDate = timezone.localize(outputStartDate)
         self.inputData = []
         self.outputData = []
         df = self.dataObtainer.getHistoricalDataAsDataframe(symbol)
@@ -116,16 +123,6 @@ class BinanceDataSetCreator:
         # First, we gather all of the means for our inputs.
         closeMeans = []
         volumeMeans = []
-
-        # Also, we will need to store the outputs, which represent the
-        # distributions of the next day prices.
-        output15thPercentiles = []
-        output25thPercentiles = []
-        output35thPercentiles = []
-        outputMedians = []
-        output65thPercentiles = []
-        output75thPercentiles = []
-        output85thPercentiles = []
         date = startDate
 
         while date < endDate:
@@ -153,67 +150,6 @@ class BinanceDataSetCreator:
             volumeMeans.append(data["Volume"].mean())
             date += self._dataTimeInterval
 
-        # We will gather the next day distribution characteristics, so we start
-        # at tomorrow.
-        date = startDate + timedelta(days=self._numberOfSamples // self._datapointsPerDay)
-
-        if self.dayByDay:
-            advanceAmount = timedelta(hours=24)
-        else:
-            advanceAmount = self._dataTimeInterval
-
-        while date < endDate:
-            print("Processing", date, "/", endDate)
-            startIndex = df.index[df["Timestamp"] == date].tolist()
-
-            if len(startIndex) == 0:
-                # date += self._dataTimeInterval * self._datapointsPerDay
-                date += advanceAmount
-                outputMedians.append(outputMedians[-1])
-                output15thPercentiles.append(output15thPercentiles[-1])
-                output25thPercentiles.append(output25thPercentiles[-1])
-                output35thPercentiles.append(output35thPercentiles[-1])
-                output65thPercentiles.append(output65thPercentiles[-1])
-                output75thPercentiles.append(output75thPercentiles[-1])
-                output85thPercentiles.append(output85thPercentiles[-1])
-                continue
-
-            startIndex = startIndex[0]
-            endIndex = df.index[
-                df["Timestamp"] == date + self._dataTimeInterval * self._datapointsPerDay].tolist()
-
-            if len(endIndex) == 0:
-                # date += self._dataTimeInterval * self._datapointsPerDay
-                date += advanceAmount
-                outputMedians.append(outputMedians[-1])
-                output15thPercentiles.append(output15thPercentiles[-1])
-                output25thPercentiles.append(output25thPercentiles[-1])
-                output35thPercentiles.append(output35thPercentiles[-1])
-                output65thPercentiles.append(output65thPercentiles[-1])
-                output75thPercentiles.append(output75thPercentiles[-1])
-                output85thPercentiles.append(output85thPercentiles[-1])
-                continue
-
-            endIndex = endIndex[0]
-            data = df.iloc[startIndex: endIndex]["Close"]
-            total = data.count()
-            median = data.median()
-            output15thPercentiles.append(data[data < median * 0.94].count() / total)
-            output25thPercentiles.append(data[data < median * 0.96].count() / total)
-            output35thPercentiles.append(data[data < median * 0.98].count() / total)
-            outputMedians.append(data[data < median].count() / total)
-            output65thPercentiles.append(data[data < median * 1.02].count() / total)
-            output75thPercentiles.append(data[data < median * 1.04].count() / total)
-            output85thPercentiles.append(data[data < median * 1.06].count() / total)
-            # outputMedians.append(data.median())
-            # output15thPercentiles.append(data.quantile(0.15))
-            # output25thPercentiles.append(data.quantile(0.25))
-            # output35thPercentiles.append(data.quantile(0.35))
-            # output65thPercentiles.append(data.quantile(0.65))
-            # output75thPercentiles.append(data.quantile(0.75))
-            # output85thPercentiles.append(data.quantile(0.85))
-            date += advanceAmount
-
         stock = StockDataFrame({
             'close': closeMeans
         })
@@ -235,8 +171,6 @@ class BinanceDataSetCreator:
         mas2 = [0 if math.isnan(x) else x for x in mas2]
         bollUppers = [0 if math.isnan(x) else x for x in bollUppers]
         bollLowers = [0 if math.isnan(x) else x for x in bollLowers]
-
-        outputIndex = 0
         entryAmount = int((len(closeMeans) - self._numberOfSamples - 1))
 
         if self.dayByDay:
@@ -244,18 +178,11 @@ class BinanceDataSetCreator:
         else:
             advanceAmount = 1
 
-        # for i in range(0, len(closeMeans) - self.numberOfSamples - 1, self._datapointsPerDay):
-        for i in range(0, len(closeMeans) - self._numberOfSamples - 1, advanceAmount):
+        for i in range(60 * self._datapointsPerDay, len(closeMeans) - self._numberOfSamples - 1, advanceAmount):
             print("Percent of entries created: " + str(i / entryAmount * 100) + "%")
+            # Get inputs
             close = closeMeans[i : i + self._numberOfSamples]
-            meanClose = sum(close) / len(close)
-            outputMedian = outputMedians[outputIndex] / meanClose
-
-            if self.medianWithin is not None and outputMedian + abs(outputMedian - 1.0) > self.medianWithin:
-                print("Skipping", outputMedian)
-                outputIndex += 1
-                continue
-
+            l = len(close)
             volume = volumeMeans[i : i + self._numberOfSamples]
             rsi = rsis[i : i + self._numberOfSamples]
             rsi2 = rsis2[i: i + self._numberOfSamples]
@@ -264,6 +191,8 @@ class BinanceDataSetCreator:
             ma2 = mas2[i : i + self._numberOfSamples]
             maxMA = max(mas)
             ma = [((m / maxMA) + 1) / 2 for m in ma]
+            maxMA2 = max(mas2)
+            ma2 = [((m / maxMA2) + 1) / 2 for m in ma2]
             bollUpper = bollUppers[i: i + self._numberOfSamples]
             maxBollUpper = max(bollUpper)
 
@@ -285,38 +214,41 @@ class BinanceDataSetCreator:
             for j in range(len(volume)):
                 volume[j] /= maxVolume
 
-            # output15thPercentile = output15thPercentiles[outputIndex] / meanClose
-            # output25thPercentile = output25thPercentiles[outputIndex] / meanClose
-            # output35thPercentile = output35thPercentiles[outputIndex] / meanClose
-            # output65thPercentile = output65thPercentiles[outputIndex] / meanClose
-            # output75thPercentile = output75thPercentiles[outputIndex] / meanClose
-            # output85thPercentile = output85thPercentiles[outputIndex] / meanClose
+            # Generate labels
+            date = startDate + self._dataTimeInterval * i
+            startIndex = df.index[df["Timestamp"] == date].tolist()
 
-            for j in range(len(volume)):
-                volume[j] /= maxVolume
+            if len(startIndex) == 0:
+                continue
 
+            startIndex = startIndex[0]
+            # endIndex = df.index[df["Timestamp"] == date + self._dataTimeInterval * self._datapointsPerDay].tolist()
+            endIndex = df.index[df["Timestamp"] == date + self._dataTimeInterval * 2].tolist()
+
+            if len(endIndex) == 0:
+                continue
+
+            endIndex = endIndex[0]
+            data = df.iloc[startIndex: endIndex]["Close"]
+            # 1440 minutes in a day.
+            yesterdayCloseMean = df.iloc[startIndex - 1440: endIndex - 1440]["Close"].mean()
+            total = data.count()
+            output15thPercentiles = data[data < yesterdayCloseMean * 0.985].count() / total
+            output25thPercentiles = data[data < yesterdayCloseMean * 0.99].count() / total
+            output35thPercentiles = data[data < yesterdayCloseMean * 0.995].count() / total
+            outputMedians = data[data < yesterdayCloseMean].count() / total
+            output65thPercentiles = data[data < yesterdayCloseMean * 1.005].count() / total
+            output75thPercentiles = data[data < yesterdayCloseMean * 1.01].count() / total
+            output85thPercentiles = data[data < yesterdayCloseMean * 1.015].count() / total
+
+            # Final stuff to add to dataset:
             self.inputData.append([close, volume, rsi, rsi2, rsi3, ma, ma2, bollUpper, bollLower])
-
-            output15thPercentile = output15thPercentiles[outputIndex]
-            output25thPercentile = output25thPercentiles[outputIndex]
-            output35thPercentile = output35thPercentiles[outputIndex]
-            outputMedian = outputMedians[outputIndex]
-            output65thPercentile = output65thPercentiles[outputIndex]
-            output75thPercentile = output75thPercentiles[outputIndex]
-            output85thPercentile = output85thPercentiles[outputIndex]
-            self.outputData.append([output15thPercentile,
-                                    output25thPercentile,
-                                    output35thPercentile,
-                                    outputMedian,
-                                    output65thPercentile,
-                                    output75thPercentile,
-                                    output85thPercentile])
-
-            # self.outputData.append([int(output15thPercentile >= 1.0),
-            #                         int(output25thPercentile >= 1.0),
-            #                         int(output35thPercentile >= 1.0),
-            #                         int(outputMedian >= 1.0),
-            #                         int(output65thPercentile >= 1.0),
-            #                         int(output75thPercentile >= 1.0),
-            #                         int(output85thPercentile >= 1.0)])
-            outputIndex += 1
+            # self.outputData.append([output15thPercentiles,
+            #                         output25thPercentiles,
+            #                         output35thPercentiles,
+            #                         outputMedians,
+            #                         output65thPercentiles,
+            #                         output75thPercentiles,
+            #                         output85thPercentiles])
+            self.outputData.append([int(data.mean() >= yesterdayCloseMean)])
+            # self.outputData.append([data.mean() / yesterdayCloseMean])
