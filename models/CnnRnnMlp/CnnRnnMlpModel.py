@@ -152,7 +152,9 @@ class CnnRnnMlpModel(Model):
         self.model.load_weights(self.exportPath)
 
     def _buildMetrics(self):
-        self.listOfMetrics = [tf.keras.metrics.Precision(thresholds=self._classificationThreshold,
+        self.listOfMetrics = [tf.keras.metrics.BinaryAccuracy(threshold=self._classificationThreshold,
+                                    name="accuracy"),
+            tf.keras.metrics.Precision(thresholds=self._classificationThreshold,
                                        name='precision'),
             tf.keras.metrics.Recall(thresholds=self._classificationThreshold,
                                     name="recall")]

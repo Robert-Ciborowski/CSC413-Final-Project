@@ -21,9 +21,9 @@ def train():
     # decayRate = 0.03
     # decayStep = 1.0
 
-    model = CnnRnnMlpModel(tryUsingGPU=True)
+    model = CnnRnnMlpModel(tryUsingGPU=False)
     model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize))
-    model.createModel(generateGraph=True)
+    model.createModel(generateGraph=False)
     # model.load()
     epochs, hist = model.trainModel(data, labels, 0.15)
     listOfMetricsToPlot = model.listOfMetrics
