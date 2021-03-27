@@ -82,21 +82,81 @@ class InceptionnetModel(Model):
         layer = self._createInceptionLayer(input_layer, 32)
         layer = layers.Flatten()(layer)
 
-        # MLP for "next day mean >= current mean" prediction. If we wanted to,
-        # we could also connect other MLPs for other outputs if we add more
-        # outputs.
-        meanDense = layers.Dense(100, activation='relu')(layer)
-        meanDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(
-            meanDense)
-        meanFinal = layers.Dense(1, activation='sigmoid',
-                                 name="meanPrediction")(meanDropout)
+        # Median
+        medianDense = layers.Dense(20, activation='relu')(layer)
+        # medianDense = layers.Dense(20, activation='relu')(medianDense)
+        medianDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(
+            medianDense)
+        medianFinal = layers.Dense(1, activation='relu', name="median")(
+            medianDropout)
 
-        # This compiles the model.
-        self.model = tf.keras.Model(input_layer, meanFinal)
-        self.model.compile(loss="binary_crossentropy",
+        # 35th Percentile
+        thirtyFifthDense = layers.Dense(20, activation='relu')(layer)
+        thirtyFifthDropout = tf.keras.layers.Dropout(
+            self.hyperparameters.dropout)(thirtyFifthDense)
+        thirtyFifthFinal = layers.Dense(1, activation='relu',
+                                        name="35th-percentile")(
+            thirtyFifthDropout)
+
+        # 25th Percentile
+        twentyFifthDense = layers.Dense(20, activation='relu')(layer)
+        twentyFifthDropout = tf.keras.layers.Dropout(
+            self.hyperparameters.dropout)(twentyFifthDense)
+        twentyFifthFinal = layers.Dense(1, activation='relu',
+                                        name="25th-percentile")(
+            twentyFifthDropout)
+
+        # 15th
+        fifteenthDense = layers.Dense(20, activation='relu')(layer)
+        fifteenthDropout = tf.keras.layers.Dropout(
+            self.hyperparameters.dropout)(fifteenthDense)
+        fifteenthFinal = layers.Dense(1, activation='relu',
+                                      name="15th-percentile")(fifteenthDropout)
+
+        # 65th Percentile
+        sixtyFifthDense = layers.Dense(20, activation='relu')(layer)
+        sixtyFifthDropout = tf.keras.layers.Dropout(
+            self.hyperparameters.dropout)(sixtyFifthDense)
+        sixtyFifthFinal = layers.Dense(1, activation='relu',
+                                       name="65th-percentile")(
+            sixtyFifthDropout)
+
+        # 75th Percentile
+        seventyFifthDense = layers.Dense(20, activation='relu')(layer)
+        seventyFifthDropout = tf.keras.layers.Dropout(
+            self.hyperparameters.dropout)(seventyFifthDense)
+        seventyFifthFinal = layers.Dense(1, activation='relu',
+                                         name="75th-percentile")(
+            seventyFifthDropout)
+
+        # 85th Percentile
+        eightyFifthDense = layers.Dense(20, activation='relu')(layer)
+        eightyFifthDropout = tf.keras.layers.Dropout(
+            self.hyperparameters.dropout)(eightyFifthDense)
+        eightyFifthFinal = layers.Dense(1, activation='relu',
+                                        name="85th-percentile")(
+            eightyFifthDropout)
+
+        outputs = [fifteenthFinal, twentyFifthFinal, thirtyFifthFinal,
+                   medianFinal, sixtyFifthFinal, seventyFifthFinal,
+                   eightyFifthFinal]
+        lossWeights = {"15th-percentile": 1.0, "25th-percentile": 1.0,
+                       "35th-percentile": 1.0, "median": 1.0,
+                       "65th-percentile": 1.0, "75th-percentile": 1.0,
+                       "85th-percentile": 1.0}
+        metrics = {"15th-percentile": self.listOfMetrics,
+                   "25th-percentile": self.listOfMetrics,
+                   "35th-percentile": self.listOfMetrics,
+                   "median": self.listOfMetrics,
+                   "65th-percentile": self.listOfMetrics,
+                   "75th-percentile": self.listOfMetrics,
+                   "85th-percentile": self.listOfMetrics}
+
+        self.model = tf.keras.Model(input_layer, outputs=outputs)
+        self.model.compile(loss="mean_squared_error", loss_weights=lossWeights,
                            optimizer=tf.keras.optimizers.Adam(
                                lr=self.hyperparameters.learningRate),
-                           metrics=self.listOfMetrics)
+                           metrics=metrics)
 
         if generateGraph:
             tf.keras.utils.plot_model(self.model,
@@ -181,10 +241,11 @@ class InceptionnetModel(Model):
         self.model.load_weights(self.exportPath)
 
     def _buildMetrics(self):
-        self.listOfMetrics = [tf.keras.metrics.Precision(thresholds=self._classificationThreshold,
-                                       name='precision'),
-            tf.keras.metrics.Recall(thresholds=self._classificationThreshold,
-                                    name="recall")]
+        # self.listOfMetrics = [tf.keras.metrics.Precision(thresholds=self._classificationThreshold,
+        #                                name='precision'),
+        #     tf.keras.metrics.Recall(thresholds=self._classificationThreshold,
+        #                             name="recall")]
+        self.listOfMetrics = ["mean_absolute_error"]
 
     def _configureForGPU(self):
         # https://www.tensorflow.org/guide/gpu
