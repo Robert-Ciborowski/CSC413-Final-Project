@@ -121,6 +121,16 @@ class DataSetCreator:
         # First, we gather all of the means for our inputs.
         closeMeans = []
         volumeMeans = []
+
+        # Also, we will need to store the outputs, which represent the
+        # distributions of the next day prices.
+        output15thPercentiles = []
+        output25thPercentiles = []
+        output35thPercentiles = []
+        outputMedians = []
+        output65thPercentiles = []
+        output75thPercentiles = []
+        output85thPercentiles = []
         date = startDate
 
         while date < endDate:
@@ -148,6 +158,60 @@ class DataSetCreator:
             volumeMeans.append(data["Volume"].mean())
             date += self._dataTimeInterval
 
+        # We will gather the next day distribution characteristics, so we start
+        # at tomorrow.
+        date = startDate + timedelta(
+            days=self._numberOfSamples // self._datapointsPerDay)
+
+        if self.dayByDay:
+            advanceAmount = timedelta(hours=24)
+        else:
+            advanceAmount = self._dataTimeInterval
+
+        while date < endDate:
+            print("Processing", date, "/", endDate)
+            startIndex = df.index[df["Timestamp"] == date].tolist()
+
+            if len(startIndex) == 0:
+                # date += self._dataTimeInterval * self._datapointsPerDay
+                date += advanceAmount
+                outputMedians.append(outputMedians[-1])
+                output15thPercentiles.append(output15thPercentiles[-1])
+                output25thPercentiles.append(output25thPercentiles[-1])
+                output35thPercentiles.append(output35thPercentiles[-1])
+                output65thPercentiles.append(output65thPercentiles[-1])
+                output75thPercentiles.append(output75thPercentiles[-1])
+                output85thPercentiles.append(output85thPercentiles[-1])
+                continue
+
+            startIndex = startIndex[0]
+            endIndex = df.index[
+                df[
+                    "Timestamp"] == date + self._dataTimeInterval * self._datapointsPerDay].tolist()
+
+            if len(endIndex) == 0:
+                # date += self._dataTimeInterval * self._datapointsPerDay
+                date += advanceAmount
+                outputMedians.append(outputMedians[-1])
+                output15thPercentiles.append(output15thPercentiles[-1])
+                output25thPercentiles.append(output25thPercentiles[-1])
+                output35thPercentiles.append(output35thPercentiles[-1])
+                output65thPercentiles.append(output65thPercentiles[-1])
+                output75thPercentiles.append(output75thPercentiles[-1])
+                output85thPercentiles.append(output85thPercentiles[-1])
+                continue
+
+            endIndex = endIndex[0]
+            data = df.iloc[startIndex: endIndex]["Close"]
+            outputMedians.append(data.median())
+            output15thPercentiles.append(data.quantile(0.15))
+            output25thPercentiles.append(data.quantile(0.25))
+            output35thPercentiles.append(data.quantile(0.35))
+            output65thPercentiles.append(data.quantile(0.65))
+            output75thPercentiles.append(data.quantile(0.75))
+            output85thPercentiles.append(data.quantile(0.85))
+            date += advanceAmount
+
         stock = StockDataFrame({
             'close': closeMeans
         })
@@ -170,6 +234,7 @@ class DataSetCreator:
         bollUppers = [0 if math.isnan(x) else x for x in bollUppers]
         bollLowers = [0 if math.isnan(x) else x for x in bollLowers]
         entryAmount = int((len(closeMeans) - self._numberOfSamples - 1))
+        outputIndex = 0
 
         if self.dayByDay:
             advanceAmount = self._datapointsPerDay
@@ -226,11 +291,27 @@ class DataSetCreator:
                 continue
 
             endIndex = endIndex[0]
-            data = df.iloc[startIndex: endIndex]["Close"]
+            # data = df.iloc[startIndex: endIndex]["Close"]
 
             # 1440 minutes in a day.
             yesterdayCloseMean = df.iloc[startIndex - 1440: endIndex - 1440]["Close"].mean()
 
             # Final stuff to add to dataset:
             self.inputData.append([close, volume, rsi, rsi2, rsi3, ma, ma2, bollUpper, bollLower])
-            self.outputData.append([int(data.mean() >= yesterdayCloseMean)])
+
+            output15thPercentile = output15thPercentiles[outputIndex] / yesterdayCloseMean
+            output25thPercentile = output25thPercentiles[outputIndex] / yesterdayCloseMean
+            output35thPercentile = output35thPercentiles[outputIndex] / yesterdayCloseMean
+            outputMedian = outputMedians[outputIndex] / yesterdayCloseMean
+            output65thPercentile = output65thPercentiles[outputIndex] / yesterdayCloseMean
+            output75thPercentile = output75thPercentiles[outputIndex] / yesterdayCloseMean
+            output85thPercentile = output85thPercentiles[outputIndex] / yesterdayCloseMean
+            self.outputData.append([output15thPercentile,
+                                    output25thPercentile,
+                                    output35thPercentile,
+                                    outputMedian,
+                                    output65thPercentile,
+                                    output75thPercentile,
+                                    output85thPercentile])
+            # self.outputData.append([int(data.mean() >= yesterdayCloseMean)])
+            outputIndex += 1
