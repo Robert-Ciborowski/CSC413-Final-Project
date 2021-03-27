@@ -23,7 +23,7 @@ def train():
 
     model = InceptionnetModel(tryUsingGPU=True)
     model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize))
-    model.createModel(generateGraph=True)
+    model.createModel(generateGraph=False)
     # model.load()
     epochs, hist = model.trainModel(data, labels, 0.15)
     listOfMetricsToPlot = model.listOfMetrics
