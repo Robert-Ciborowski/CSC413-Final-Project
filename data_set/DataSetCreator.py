@@ -3,10 +3,13 @@
 # Date: 19/04/2020
 # Description: Creates a data set from Binance data.
 
+# Various rando libraries to test out.
 from datetime import timedelta
 from typing import List
 import pytz
 from stock_pandas import StockDataFrame
+import pandas as pd
+from ta.utils import dropna
 
 from stock_data import HistoricalDataObtainer
 import csv
@@ -70,11 +73,12 @@ class DataSetCreator:
                                 + ["Volume-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["RSI1-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["RSI2-" + str(i) for i in range(self._numberOfSamples)]
-                                + ["RSI3-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["EMA-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["MACD1-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["MACD2-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["BollUpper-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["BollLower-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["MFI-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["15th-Percentile", "25th-Percentile",
                                    "35th-Percentile", "Median", "65th-Percentile",
                                    "75th-Percentile", "85th-Percentile"])
@@ -213,26 +217,31 @@ class DataSetCreator:
             date += advanceAmount
 
         stock = StockDataFrame({
-            'close': closeMeans
+            "close": closeMeans,
+            "volume": volumeMeans
         })
 
         # The standard RSI is 14 day.
         rsis = (stock["rsi:112"] / 100).tolist()
-        rsis2 = (stock["rsi:56"] / 100).tolist()
-        rsis3 = (stock["rsi:14"] / 100).tolist()
+        rsis2 = (stock["rsi:14"] / 100).tolist()
+        emas = (stock["ema:21"] / 100).tolist()
         mas = stock["macd:96,208"].tolist()
         mas2 = stock["macd:24,52"].tolist()
         bollUppers = stock["boll.upper:160"].tolist()
         bollLowers = stock["boll.lower:160"].tolist()
+        from ta.volume import MFIIndicator
+        moneyFlowIndex = MFIIndicator(stock["close"], stock["close"], stock["close"], stock["volume"], window=14)
+        mfis = (moneyFlowIndex.money_flow_index().divide(100)).to_list()
 
         import math
         rsis = [0 if math.isnan(x) else x for x in rsis]
         rsis2 = [0 if math.isnan(x) else x for x in rsis2]
-        rsis3 = [0 if math.isnan(x) else x for x in rsis3]
+        emas = [0 if math.isnan(x) else x for x in emas]
         mas = [0 if math.isnan(x) else x for x in mas]
         mas2 = [0 if math.isnan(x) else x for x in mas2]
         bollUppers = [0 if math.isnan(x) else x for x in bollUppers]
         bollLowers = [0 if math.isnan(x) else x for x in bollLowers]
+        mfis = [0 if math.isnan(x) else x for x in mfis]
         entryAmount = int((len(closeMeans) - self._numberOfSamples - 1))
         outputIndex = 0
 
@@ -249,13 +258,16 @@ class DataSetCreator:
             volume = volumeMeans[i : i + self._numberOfSamples]
             rsi = rsis[i : i + self._numberOfSamples]
             rsi2 = rsis2[i: i + self._numberOfSamples]
-            rsi3 = rsis3[i: i + self._numberOfSamples]
+            ema = emas[i: i + self._numberOfSamples]
             ma = mas[i : i + self._numberOfSamples]
             ma2 = mas2[i : i + self._numberOfSamples]
-            maxMA = max(mas)
+            maxEMA = max(ema)
+            ema = [((m / maxEMA) + 1) / 2 for m in ema]
+            maxMA = max(ma)
             ma = [((m / maxMA) + 1) / 2 for m in ma]
-            maxMA2 = max(mas2)
+            maxMA2 = max(ma2)
             ma2 = [((m / maxMA2) + 1) / 2 for m in ma2]
+            mfi = mfis[i: i + self._numberOfSamples]
             bollUpper = bollUppers[i: i + self._numberOfSamples]
             maxBollUpper = max(bollUpper)
 
@@ -297,7 +309,7 @@ class DataSetCreator:
             yesterdayCloseMean = df.iloc[startIndex - 1440: endIndex - 1440]["Close"].mean()
 
             # Final stuff to add to dataset:
-            self.inputData.append([close, volume, rsi, rsi2, rsi3, ma, ma2, bollUpper, bollLower])
+            self.inputData.append([close, volume, rsi, rsi2, ema, ma, ma2, bollUpper, bollLower, mfi])
 
             output15thPercentile = output15thPercentiles[outputIndex] / yesterdayCloseMean
             output25thPercentile = output25thPercentiles[outputIndex] / yesterdayCloseMean

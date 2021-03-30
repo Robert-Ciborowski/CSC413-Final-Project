@@ -5,7 +5,7 @@
 #              convenient numpy arrays.
 
 import csv
-from util.Constants import SAMPLES_OF_DATA_TO_LOOK_AT
+from util.Constants import INPUT_CHANNELS, SAMPLES_OF_DATA_TO_LOOK_AT
 import numpy as np
 
 class DatasetLoader:
@@ -28,26 +28,11 @@ class DatasetLoader:
                 entries = []
 
                 for i in range(SAMPLES_OF_DATA_TO_LOOK_AT):
-                    entries.append((float(row[i]),
-                                    float(row[i + SAMPLES_OF_DATA_TO_LOOK_AT]),
-                                    float(row[
-                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 2]),
-                                    float(row[
-                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 3]),
-                                    float(row[
-                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 4]),
-                                    float(row[
-                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 5]),
-                                    float(row[
-                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 6]),
-                                    float(row[
-                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 7]),
-                                    float(row[
-                                              i + SAMPLES_OF_DATA_TO_LOOK_AT * 8])
-                                    ))
+                    # Get one time point's data, including indicators:
+                    entries.append([float(row[i + j * SAMPLES_OF_DATA_TO_LOOK_AT]) for j in range(INPUT_CHANNELS)])
 
                 data.append(np.array(entries))
-                label = float(row[SAMPLES_OF_DATA_TO_LOOK_AT * 9])
+                label = float(row[SAMPLES_OF_DATA_TO_LOOK_AT * INPUT_CHANNELS])
                 labels.append(label)
 
         if shuffle:
