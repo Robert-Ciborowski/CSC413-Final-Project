@@ -15,7 +15,8 @@ from matplotlib import pyplot as plt
 from tensorflow.keras import layers
 from models.Hyperparameters import Hyperparameters
 from models.Model import Model
-from util.Constants import INPUT_CHANNELS, SAMPLES_OF_DATA_TO_LOOK_AT
+from util.Constants import INPUT_CHANNELS, OUTPUT_CHANNELS, \
+    SAMPLES_OF_DATA_TO_LOOK_AT
 
 class InceptionnetModel(Model):
     hyperparameters: Hyperparameters
@@ -72,85 +73,29 @@ class InceptionnetModel(Model):
 
         return result
 
-    def createModel(self, generateGraph=False):
+    def createModel(self, numberOfOutputs: int, generateGraph=False):
         """
         Creates a brand new neural network for this model.
         """
+        outputNames = ["15th-percentile"]
+        outputs = []
+
         # Should go over minutes, not seconds
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
-        print(input_layer.shape)
-        layer = self._createInceptionLayer(input_layer, 32)
-        layer = layers.Flatten()(layer)
 
-        # Median
-        medianDense = layers.Dense(20, activation='relu')(layer)
-        # medianDense = layers.Dense(20, activation='relu')(medianDense)
-        medianDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(
-            medianDense)
-        medianFinal = layers.Dense(1, activation='relu', name="median")(
-            medianDropout)
+        for i in range(numberOfOutputs):
+            layer = self._createInceptionLayer(input_layer, 1)
+            layer = layers.Flatten()(layer)
+            layer = layers.Dense(128)(layer)
 
-        # 35th Percentile
-        thirtyFifthDense = layers.Dense(20, activation='relu')(layer)
-        thirtyFifthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(thirtyFifthDense)
-        thirtyFifthFinal = layers.Dense(1, activation='relu',
-                                        name="35th-percentile")(
-            thirtyFifthDropout)
+            layer = layers.Dense(30, activation='relu')(layer)
+            layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
+            layer = layers.Dense(1, activation='sigmoid', name=outputNames[i])(
+                layer)
+            outputs.append(layer)
 
-        # 25th Percentile
-        twentyFifthDense = layers.Dense(20, activation='relu')(layer)
-        twentyFifthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(twentyFifthDense)
-        twentyFifthFinal = layers.Dense(1, activation='relu',
-                                        name="25th-percentile")(
-            twentyFifthDropout)
-
-        # 15th
-        fifteenthDense = layers.Dense(20, activation='relu')(layer)
-        fifteenthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(fifteenthDense)
-        fifteenthFinal = layers.Dense(1, activation='relu',
-                                      name="15th-percentile")(fifteenthDropout)
-
-        # 65th Percentile
-        sixtyFifthDense = layers.Dense(20, activation='relu')(layer)
-        sixtyFifthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(sixtyFifthDense)
-        sixtyFifthFinal = layers.Dense(1, activation='relu',
-                                       name="65th-percentile")(
-            sixtyFifthDropout)
-
-        # 75th Percentile
-        seventyFifthDense = layers.Dense(20, activation='relu')(layer)
-        seventyFifthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(seventyFifthDense)
-        seventyFifthFinal = layers.Dense(1, activation='relu',
-                                         name="75th-percentile")(
-            seventyFifthDropout)
-
-        # 85th Percentile
-        eightyFifthDense = layers.Dense(20, activation='relu')(layer)
-        eightyFifthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(eightyFifthDense)
-        eightyFifthFinal = layers.Dense(1, activation='relu',
-                                        name="85th-percentile")(
-            eightyFifthDropout)
-
-        outputs = [fifteenthFinal, twentyFifthFinal, thirtyFifthFinal,
-                   medianFinal, sixtyFifthFinal, seventyFifthFinal,
-                   eightyFifthFinal]
-        lossWeights = {"15th-percentile": 1.0, "25th-percentile": 1.0,
-                       "35th-percentile": 1.0, "median": 1.0,
-                       "65th-percentile": 1.0, "75th-percentile": 1.0,
-                       "85th-percentile": 1.0}
-        metrics = {"15th-percentile": self.listOfMetrics,
-                   "25th-percentile": self.listOfMetrics,
-                   "35th-percentile": self.listOfMetrics,
-                   "median": self.listOfMetrics,
-                   "65th-percentile": self.listOfMetrics,
-                   "75th-percentile": self.listOfMetrics,
-                   "85th-percentile": self.listOfMetrics}
+        lossWeights = {name: 1.0 for name in outputNames}
+        metrics = {name: self.listOfMetrics for name in outputNames}
 
         self.model = tf.keras.Model(input_layer, outputs=outputs)
         self.model.compile(loss="mean_squared_error", loss_weights=lossWeights,
@@ -196,11 +141,11 @@ class InceptionnetModel(Model):
 
     def trainModel(self, features, labels, validationSplit: float):
         """Train the model by feeding it data."""
-        earlyStopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
-                                                         mode='min', verbose=1,
-                                                         patience=15)
+        # earlyStopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
+        #                                                  mode='min', verbose=1,
+        #                                                  patience=15)
         history = self.model.fit(x=features, y=labels, batch_size=self.hyperparameters.batchSize,
-                                 validation_split=validationSplit, epochs=self.hyperparameters.epochs, shuffle=True, callbacks=[earlyStopping])
+                                 validation_split=validationSplit, epochs=self.hyperparameters.epochs, shuffle=True)
 
         # The list of epochs is stored separately from the rest of history.
         epochs = history.epoch

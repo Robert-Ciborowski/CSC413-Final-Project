@@ -1,2 +1,2 @@
-model_checkpoint_path: "cnnrnnmlp"
-all_model_checkpoint_paths: "cnnrnnmlp"
+model_checkpoint_path: "cnnrnnmlp-85th-percentile"
+all_model_checkpoint_paths: "cnnrnnmlp-85th-percentile"

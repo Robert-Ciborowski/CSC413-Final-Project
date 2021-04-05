@@ -19,8 +19,8 @@ from datetime import timedelta, datetime
 from dateutil import parser
 
 # Random API stuff: ignore
-binance_api_key = "REDACTED"
-binance_api_secret = "REDACTED"
+binance_api_key = "Redacted"
+binance_api_secret = "Redacted"
 
 # Constants and globals.
 binsizes = {"1m": 1, "5m": 5, "1h": 60, "1d": 1440}
@@ -84,12 +84,12 @@ def downloadSpecificBinanceDataToCSV(tickers: List, oldest=None):
 if __name__ == "__main__":
     tickers = [
         "BTCUSDT",
-        "LTCUSDT",
-        "ETHUSDT"
+        # "LTCUSDT",
+        # "ETHUSDT"
     ]
 
     # This either downloads or updates our dataset.
-    # downloadSpecificBinanceDataToCSV(tickers, oldest=datetime(year=2020, month=6, day=1))
-    downloadSpecificBinanceDataToCSV(tickers)
+    downloadSpecificBinanceDataToCSV(tickers, oldest=datetime(year=2021, month=4, day=1))
+    # downloadSpecificBinanceDataToCSV(tickers)
     # downloadBinanceDataToCSV()
     # downloadSpecificBinanceDataToCSV("OAXBTC")

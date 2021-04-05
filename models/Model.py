@@ -14,7 +14,14 @@ class Model:
     def predict(self, data) -> bool:
         pass
 
-    def createModel(self):
+    def createModel(self, numberOfOutputs: int):
+        """
+        Creates the model.
+        :param numberOfOutputs: usually either OUTPUT_CHANNELS if predicting
+                                all percentiles, or 1 if predicting a single
+                                percentile.
+        :return:
+        """
         pass
 
     def trainModel(self, features, labels, validationSplit: float):

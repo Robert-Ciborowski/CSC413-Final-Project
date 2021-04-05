@@ -14,7 +14,8 @@ from matplotlib import pyplot as plt
 from tensorflow.keras import layers
 from models.Hyperparameters import Hyperparameters
 from models.Model import Model
-from util.Constants import INPUT_CHANNELS, SAMPLES_OF_DATA_TO_LOOK_AT
+from util.Constants import INPUT_CHANNELS, OUTPUT_CHANNELS, \
+    SAMPLES_OF_DATA_TO_LOOK_AT
 
 class CnnRnnMlpModel(Model):
     hyperparameters: Hyperparameters
@@ -32,7 +33,7 @@ class CnnRnnMlpModel(Model):
         else:
             self._configureForGPU()
 
-        self.exportPath = "./model_exports/cnnrnnmlp"
+        self.exportPath = "./model_exports/cnnrnnmlp-15th-percentile"
 
         # The following lines adjust the granularity of reporting.
         pd.options.display.max_rows = 10
@@ -71,97 +72,40 @@ class CnnRnnMlpModel(Model):
 
         return result
 
-    def createModel(self, generateGraph=False):
+    def createModel(self, numberOfOutputs: int, generateGraph=False):
         """
         Creates a brand new neural network for this model.
         """
+        outputNames = ["15th-percentile"]
+        outputs = []
+
         # Should go over minutes, not seconds
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
-        layer = layers.Conv1D(filters=16, kernel_size=3, activation='relu',
-                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
-                                           self._numberOfInputChannels))(input_layer)
-        layer = tf.transpose(layer, [0, 2, 1])
-        forward_lstm = tf.keras.layers.LSTM(layer.shape[2], return_sequences=True)
-        backward_lstm = tf.keras.layers.LSTM(layer.shape[2], activation='relu', return_sequences=True, go_backwards=True)
-        layer = tf.keras.layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=layer.shape)(layer)
-        layer = layers.Flatten()(layer)
 
-        # MLP for "next day mean >= current mean" prediction. If we wanted to,
-        # we could also connect other MLPs for other outputs if we add more
-        # outputs.
-        # meanDense = layers.Dense(100, activation='relu')(layer)
-        # meanDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(meanDense)
-        # meanFinal = layers.Dense(1, activation='sigmoid', name="meanPrediction")(meanDropout)
+        for i in range(numberOfOutputs):
+            layer = layers.Conv1D(filters=2, kernel_size=1, activation='relu',
+                                  input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
+                                               self._numberOfInputChannels))(input_layer)
+            layer = tf.transpose(layer, [0, 2, 1])
+            forward_lstm = tf.keras.layers.LSTM(layer.shape[2], return_sequences=True)
+            backward_lstm = tf.keras.layers.LSTM(layer.shape[2], activation='relu', return_sequences=True, go_backwards=True)
+            layer = tf.keras.layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=layer.shape)(layer)
+            layer = layers.Flatten()(layer)
 
-        # Median
-        medianDense = layers.Dense(20, activation='relu')(layer)
-        # medianDense = layers.Dense(20, activation='relu')(medianDense)
-        medianDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(
-            medianDense)
-        medianFinal = layers.Dense(1, activation='relu', name="median")(
-            medianDropout)
+            # MLP for "next day mean >= current mean" prediction. If we wanted to,
+            # we could also connect other MLPs for other outputs if we add more
+            # outputs.
+            # meanDense = layers.Dense(100, activation='relu')(layer)
+            # meanDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(meanDense)
+            # meanFinal = layers.Dense(1, activation='sigmoid', name="meanPrediction")(meanDropout)
 
-        # 35th Percentile
-        thirtyFifthDense = layers.Dense(20, activation='relu')(layer)
-        thirtyFifthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(thirtyFifthDense)
-        thirtyFifthFinal = layers.Dense(1, activation='relu',
-                                        name="35th-percentile")(
-            thirtyFifthDropout)
+            layer = layers.Dense(60, activation='relu')(layer)
+            layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
+            layer = layers.Dense(1, activation='sigmoid', name=outputNames[i])(layer)
+            outputs.append(layer)
 
-        # 25th Percentile
-        twentyFifthDense = layers.Dense(20, activation='relu')(layer)
-        twentyFifthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(twentyFifthDense)
-        twentyFifthFinal = layers.Dense(1, activation='relu',
-                                        name="25th-percentile")(
-            twentyFifthDropout)
-
-        # 15th
-        fifteenthDense = layers.Dense(20, activation='relu')(layer)
-        fifteenthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(fifteenthDense)
-        fifteenthFinal = layers.Dense(1, activation='relu',
-                                      name="15th-percentile")(fifteenthDropout)
-
-        # 65th Percentile
-        sixtyFifthDense = layers.Dense(20, activation='relu')(layer)
-        sixtyFifthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(sixtyFifthDense)
-        sixtyFifthFinal = layers.Dense(1, activation='relu',
-                                       name="65th-percentile")(
-            sixtyFifthDropout)
-
-        # 75th Percentile
-        seventyFifthDense = layers.Dense(20, activation='relu')(layer)
-        seventyFifthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(seventyFifthDense)
-        seventyFifthFinal = layers.Dense(1, activation='relu',
-                                         name="75th-percentile")(
-            seventyFifthDropout)
-
-        # 85th Percentile
-        eightyFifthDense = layers.Dense(20, activation='relu')(layer)
-        eightyFifthDropout = tf.keras.layers.Dropout(
-            self.hyperparameters.dropout)(eightyFifthDense)
-        eightyFifthFinal = layers.Dense(1, activation='relu',
-                                        name="85th-percentile")(
-            eightyFifthDropout)
-
-        outputs = [fifteenthFinal, twentyFifthFinal, thirtyFifthFinal,
-                   medianFinal, sixtyFifthFinal, seventyFifthFinal,
-                   eightyFifthFinal]
-        lossWeights = {"15th-percentile": 1.0, "25th-percentile": 1.0,
-                       "35th-percentile": 1.0, "median": 1.0,
-                       "65th-percentile": 1.0, "75th-percentile": 1.0,
-                       "85th-percentile": 1.0}
-        metrics = {"15th-percentile": self.listOfMetrics,
-                   "25th-percentile": self.listOfMetrics,
-                   "35th-percentile": self.listOfMetrics,
-                   "median": self.listOfMetrics,
-                   "65th-percentile": self.listOfMetrics,
-                   "75th-percentile": self.listOfMetrics,
-                   "85th-percentile": self.listOfMetrics}
+        lossWeights = {name: 1.0 for name in outputNames}
+        metrics = {name: self.listOfMetrics for name in outputNames}
 
         self.model = tf.keras.Model(input_layer, outputs=outputs)
         self.model.compile(loss="mean_squared_error", loss_weights=lossWeights,
@@ -183,11 +127,11 @@ class CnnRnnMlpModel(Model):
 
     def trainModel(self, features, labels, validationSplit: float):
         """Train the model by feeding it data."""
-        earlyStopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
-                                                         mode='min', verbose=1,
-                                                         patience=15)
+        # earlyStopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
+        #                                                  mode='min', verbose=1,
+        #                                                  patience=15)
         history = self.model.fit(x=features, y=labels, batch_size=self.hyperparameters.batchSize,
-                                 validation_split=validationSplit, epochs=self.hyperparameters.epochs, shuffle=True, callbacks=[earlyStopping])
+                                 validation_split=validationSplit, epochs=self.hyperparameters.epochs, shuffle=True)
 
         # The list of epochs is stored separately from the rest of history.
         epochs = history.epoch
@@ -228,7 +172,6 @@ class CnnRnnMlpModel(Model):
         self.model.load_weights(self.exportPath)
 
     def _buildMetrics(self):
-<<<<<<< HEAD
         # self.listOfMetrics = [tf.keras.metrics.Precision(thresholds=self._classificationThreshold,
         #                                name='precision'),
         #     tf.keras.metrics.Recall(thresholds=self._classificationThreshold,
