@@ -14,7 +14,9 @@ SAMPLES_OF_DATA_TO_LOOK_AT = DAYS_IN_AN_INPUT * 8
 
 # How many channels do we have in an input? If we have price, volume, and 7
 # indicators, we have 9 channels.
-INPUT_CHANNELS = 9
+INPUT_CHANNELS = 10
+# for the minimum indicators, use:
+# INPUT_CHANNELS = 5
 
 # How many values are there in the output?
 OUTPUT_CHANNELS = 7

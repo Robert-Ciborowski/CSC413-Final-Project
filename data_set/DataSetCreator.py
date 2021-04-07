@@ -5,6 +5,7 @@
 
 # Various rando libraries to test out.
 from datetime import datetime, timedelta
+from random import randint, uniform
 from typing import List
 import pytz
 from stock_pandas import StockDataFrame
@@ -102,14 +103,35 @@ class DataSetCreator:
         except IOError as e:
             print("Error writing to csv file! " + str(e))
 
-    def createDataset(self, symbol: str, startDate, endDate, useAllIndicators=True):
+    def createAugmentedDataset(self, symbol: str, augmentationFactor: int, plannedValidationSplit: float, startDate, endDate, useAllIndicators=True):
+        inputData = []
+        outputData = []
+        inputValidationData = []
+        outputValidationData = []
+        split = 1 - plannedValidationSplit
+
+        for i in range(augmentationFactor):
+            print("Augmentation " + str(i) + "...")
+            self.createDataset(symbol, startDate, endDate, useAllIndicators)
+            size = len(self.inputData)
+            inputData += self.inputData[0 : int(split * size)]
+            outputData += self.outputData[0 : int(split * size)]
+            inputValidationData += self.inputData[int(split * size) : size]
+            outputValidationData += self.outputData[int(split * size) : size]
+
+        self.inputData = inputData + inputValidationData
+        self.outputData = outputData + outputValidationData
+
+    def createDataset(self, symbol: str, startDate, endDate, useAllIndicators=True, isAugmenting=False):
         """
         Creates a dataset. Please make sure that the start and end dates are
         the beginnings of days.
         :param symbol: e.g. "BTCUSDT"
         :param startDate: e.g. datetime(year=2020, month=1, day=1)
         :param endDate: e.g. datetime(year=2020, month=2, day=1)
-        :param useAllIndicators: if False, only uses the minimum indicators
+        :param useAllIndicators: if False, only uses the minimum indicators. Make
+                                 sure that the OUTPUT_CHANNEL value in Constants.py
+                                 matches the output of this function!
         """
         # These are time-related variables.
         timezone = "Etc/GMT-0"
@@ -193,8 +215,14 @@ class DataSetCreator:
 
             endIndex = endIndex[0]
             data = df.iloc[startIndex : endIndex]
-            closeMeans.append(data["Close"].mean())
-            volumeMeans.append(data["Volume"].mean())
+
+            if isAugmenting:
+                augmentation = uniform(0.996, 1.004)
+                closeMeans.append(data["Close"].mean() * augmentation)
+                volumeMeans.append(data["Volume"].mean() * augmentation)
+            else:
+                closeMeans.append(data["Close"].mean())
+                volumeMeans.append(data["Volume"].mean())
 
             # Now we get the start and end dates for output data that would
             # be associated with an entry that begins at the data point found

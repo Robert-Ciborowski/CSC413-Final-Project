@@ -17,8 +17,8 @@ def train():
 
     # Hyperparameters!
     learningRate = 0.00005
-    epochs = 1600
-    batchSize = 64
+    epochs = 400
+    batchSize = 256
     dropout = 0.2
     # Not currently in use:
     # decayRate = 0.03
@@ -31,7 +31,7 @@ def train():
     # If we only want to predict one of the percentiles:
     model.createModel(1, generateGraph=False)
     # model.load()
-    epochs, hist = model.trainModel(data, labels, 0.005)
+    epochs, hist = model.trainModel(data, labels, 0.10)
     listOfMetricsToPlot = model.listOfMetrics
     model.plotCurve(epochs, hist)
     # model.save()
@@ -39,7 +39,7 @@ def train():
     # Test the model on test data.
     testData, testLabels = datasetLoader.load(shuffle=False, path="../../data_set/final-test-dataset.csv", onlyLabelToUse=0)
     model.evaluate(testData, testLabels)
-    print(model.predict(testData[627:628,:,:]))
+    print(model.predict(testData[50:51,:,:]))
     print(testData.shape[0])
 
     # If you want to generate predictions for a whole batch of data, do this:

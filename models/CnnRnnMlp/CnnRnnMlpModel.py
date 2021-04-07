@@ -91,6 +91,7 @@ class CnnRnnMlpModel(Model):
             backward_lstm = tf.keras.layers.LSTM(layer.shape[2], activation='relu', return_sequences=True, go_backwards=True)
             layer = tf.keras.layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=layer.shape)(layer)
             layer = layers.Flatten()(layer)
+            print("LSTM output shape:", layer.shape)
 
             # MLP for "next day mean >= current mean" prediction. If we wanted to,
             # we could also connect other MLPs for other outputs if we add more
@@ -99,7 +100,7 @@ class CnnRnnMlpModel(Model):
             # meanDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(meanDense)
             # meanFinal = layers.Dense(1, activation='sigmoid', name="meanPrediction")(meanDropout)
 
-            layer = layers.Dense(60, activation='relu')(layer)
+            layer = layers.Dense(6, activation='relu')(layer)
             layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
             layer = layers.Dense(1, activation='sigmoid', name=outputNames[i])(layer)
             outputs.append(layer)
