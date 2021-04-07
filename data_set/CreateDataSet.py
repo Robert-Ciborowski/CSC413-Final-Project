@@ -26,8 +26,8 @@ if __name__ == "__main__":
     # Some good dates for if you want a Bitcoin dataset.
     startDate = datetime(day=1, month=10, year=2017, hour=0, minute=0)
     trainingStartDate = datetime(day=1, month=1, year=2018, hour=0, minute=0)
-    trainingEndDate = datetime(day=1, month=1, year=2021, hour=0, minute=0)
-    endDate = datetime(day=2, month=4, year=2021, hour=0, minute=0)
+    trainingEndDate = datetime(day=15, month=3, year=2021, hour=0, minute=0)
+    endDate = datetime(day=7, month=4, year=2021, hour=0, minute=0)
     historicalObtainer = HistoricalDataObtainer(startDate, endDate,
                                                        "../data_downloads/")
 

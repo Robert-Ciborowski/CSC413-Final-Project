@@ -13,7 +13,7 @@ def train():
     print("Loading dataset...")
     datasetLoader = DatasetLoader()
     # For our outputs, only put in the 15th percentile as the output.
-    data, labels = datasetLoader.load(shuffle=False, path="../../data_set/final-test-dataset.csv", onlyLabelToUse=0)
+    data, labels = datasetLoader.load(shuffle=False, path="../../data_set/final-train-dataset.csv", onlyLabelToUse=0)
 
     # Hyperparameters!
     learningRate = 0.00005
@@ -31,7 +31,7 @@ def train():
     # If we only want to predict one of the percentiles:
     model.createModel(1, generateGraph=False)
     # model.load()
-    epochs, hist = model.trainModel(data, labels, 0.15)
+    epochs, hist = model.trainModel(data, labels, 0.005)
     listOfMetricsToPlot = model.listOfMetrics
     model.plotCurve(epochs, hist)
     # model.save()
