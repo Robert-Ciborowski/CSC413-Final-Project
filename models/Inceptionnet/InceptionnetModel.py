@@ -42,6 +42,12 @@ class InceptionnetModel(Model):
         tf.keras.backend.set_floatx('float64')
         self._classificationThreshold = 0.5
 
+        # The ability of our model to perform well on the validation set and
+        # its ability to perform better on the training set is being affected
+        # by weight initialization. Thus, we need to use the same good seed.
+        # np.random.seed(1)
+        tf.random.set_seed(8008)
+
     def setup(self, hyperparameters: Hyperparameters):
         self._buildMetrics()
         self.hyperparameters = hyperparameters

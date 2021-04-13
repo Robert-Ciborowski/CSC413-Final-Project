@@ -13,7 +13,7 @@ class DatasetLoader:
     def __init__(self):
         pass
 
-    def load(self, path="../data_set/final-train-dataset.csv", shuffle=False, onlyLabelToUse=None):
+    def load(self, path="../data_set/final-train-dataset.csv", shuffle=False, onlyLabelToUse=None, useTop3Indicators=False):
         """
         Load a dataset into a numpy array for features and a numpy array for labels.
         :param path: dataset file path
@@ -39,8 +39,14 @@ class DatasetLoader:
 
                 for i in range(SAMPLES_OF_DATA_TO_LOOK_AT):
                     # Get one time point's data, including indicators:
-                    entries.append([float(row[i + j * SAMPLES_OF_DATA_TO_LOOK_AT]) for j in range(INPUT_CHANNELS)])
-
+                    if useTop3Indicators:
+                        entries.append(
+                            [float(row[i + j * SAMPLES_OF_DATA_TO_LOOK_AT]) for
+                             j in [0, 1, 2, 3, 10]])
+                    else:
+                        entries.append(
+                            [float(row[i + j * SAMPLES_OF_DATA_TO_LOOK_AT]) for
+                             j in range(INPUT_CHANNELS)])
 
                 data.append(np.array(entries))
 

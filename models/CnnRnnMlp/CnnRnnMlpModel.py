@@ -41,6 +41,12 @@ class CnnRnnMlpModel(Model):
         tf.keras.backend.set_floatx('float64')
         self._classificationThreshold = 0.5
 
+        # The ability of our model to perform well on the validation set and
+        # its ability to perform better on the training set is being affected
+        # by weight initialization. Thus, we need to use the same good seed.
+        # np.random.seed(1)
+        tf.random.set_seed(8008)
+
     def setup(self, hyperparameters: Hyperparameters):
         self._buildMetrics()
         self.hyperparameters = hyperparameters
@@ -83,15 +89,16 @@ class CnnRnnMlpModel(Model):
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
 
         for i in range(numberOfOutputs):
-            layer = layers.Conv1D(filters=2, kernel_size=1, activation='relu',
+            layer = layers.Conv1D(filters=16, kernel_size=3, activation='relu',
                                   input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
-                                               self._numberOfInputChannels))(input_layer)
-            layer = tf.transpose(layer, [0, 2, 1])
-            forward_lstm = tf.keras.layers.LSTM(layer.shape[2], return_sequences=True)
-            backward_lstm = tf.keras.layers.LSTM(layer.shape[2], activation='relu', return_sequences=True, go_backwards=True)
-            layer = tf.keras.layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=layer.shape)(layer)
+                                               self._numberOfInputChannels))(
+                input_layer)
+            # layer = tf.transpose(layer, [0, 2, 1])
+            print(layer.shape[1])
+            layer = tf.keras.layers.Bidirectional(
+                tf.keras.layers.LSTM(layer.shape[1], input_shape=layer.shape))(layer)
+                # tf.keras.layers.LSTM(60, input_shape=layer.shape))(layer)
             layer = layers.Flatten()(layer)
-            print("LSTM output shape:", layer.shape)
 
             # MLP for "next day mean >= current mean" prediction. If we wanted to,
             # we could also connect other MLPs for other outputs if we add more
@@ -100,9 +107,10 @@ class CnnRnnMlpModel(Model):
             # meanDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(meanDense)
             # meanFinal = layers.Dense(1, activation='sigmoid', name="meanPrediction")(meanDropout)
 
-            layer = layers.Dense(6, activation='relu')(layer)
+            layer = layers.Dense(100, activation='relu')(layer)
             layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
-            layer = layers.Dense(1, activation='sigmoid', name=outputNames[i])(layer)
+            layer = layers.Dense(1, activation='sigmoid', name=outputNames[i])(
+                layer)
             outputs.append(layer)
 
         lossWeights = {name: 1.0 for name in outputNames}

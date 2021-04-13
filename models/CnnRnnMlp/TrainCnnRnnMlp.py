@@ -13,12 +13,14 @@ def train():
     print("Loading dataset...")
     datasetLoader = DatasetLoader()
     # For our outputs, only put in the 15th percentile as the output.
-    data, labels = datasetLoader.load(shuffle=False, path="../../data_set/final-train-dataset.csv", onlyLabelToUse=0)
+    # Note: THIS IS ONLY USING THE TOP 3 INDICATORS!
+    data, labels = datasetLoader.load(shuffle=False, path="../../data_set/final-train-dataset.csv",
+                                      onlyLabelToUse=0, useTop3Indicators=True)
 
     # Hyperparameters!
-    learningRate = 0.00005
-    epochs = 400
-    batchSize = 256
+    learningRate = 0.0001
+    epochs = 600
+    batchSize = 640
     dropout = 0.2
     # Not currently in use:
     # decayRate = 0.03
@@ -31,13 +33,14 @@ def train():
     # If we only want to predict one of the percentiles:
     model.createModel(1, generateGraph=False)
     # model.load()
-    epochs, hist = model.trainModel(data, labels, 0.10)
+    epochs, hist = model.trainModel(data, labels, 0.15)
     listOfMetricsToPlot = model.listOfMetrics
     model.plotCurve(epochs, hist)
-    # model.save()
+    model.save()
 
     # Test the model on test data.
-    testData, testLabels = datasetLoader.load(shuffle=False, path="../../data_set/final-test-dataset.csv", onlyLabelToUse=0)
+    testData, testLabels = datasetLoader.load(shuffle=False, path="../../data_set/final-test-dataset.csv",
+                                              onlyLabelToUse=0, useTop3Indicators=True)
     model.evaluate(testData, testLabels)
     print(model.predict(testData[50:51,:,:]))
     print(testData.shape[0])
