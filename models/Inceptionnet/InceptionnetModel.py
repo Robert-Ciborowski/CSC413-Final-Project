@@ -22,11 +22,12 @@ class InceptionnetModel(Model):
     hyperparameters: Hyperparameters
     listOfMetrics: List
     exportPath: str
+    binary: bool
 
     _NUMBER_OF_SAMPLES = SAMPLES_OF_DATA_TO_LOOK_AT
     _numberOfInputChannels = INPUT_CHANNELS
 
-    def __init__(self, tryUsingGPU=False):
+    def __init__(self, tryUsingGPU=False, binary=False):
         super().__init__()
 
         if not tryUsingGPU:
@@ -41,6 +42,7 @@ class InceptionnetModel(Model):
         pd.options.display.float_format = "{:.1f}".format
         tf.keras.backend.set_floatx('float64')
         self._classificationThreshold = 0.5
+        self.binary = binary
 
         # The ability of our model to perform well on the validation set and
         # its ability to perform better on the training set is being affected
@@ -79,35 +81,34 @@ class InceptionnetModel(Model):
 
         return result
 
-    def createModel(self, numberOfOutputs: int, generateGraph=False):
+    def createModel(self, generateGraph=False):
         """
         Creates a brand new neural network for this model.
         """
-        outputNames = ["15th-percentile"]
-        outputs = []
-
         # Should go over minutes, not seconds
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
+        layer = self._createInceptionLayer(input_layer, 1)
+        layer = layers.Flatten()(layer)
+        print(layer.shape)
+        layer = layers.Dense(64)(layer)
+        layer = layers.Dense(32)(layer)
+        layer = layers.Dense(16)(layer)
+        layer = layers.Dense(8, activation='relu')(layer)
+        layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
+        output = layers.Dense(1, activation='sigmoid', name="output")(layer)
 
-        for i in range(numberOfOutputs):
-            layer = self._createInceptionLayer(input_layer, 1)
-            layer = layers.Flatten()(layer)
-            layer = layers.Dense(128)(layer)
+        self.model = tf.keras.Model(input_layer, outputs=output)
 
-            layer = layers.Dense(30, activation='relu')(layer)
-            layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
-            layer = layers.Dense(1, activation='sigmoid', name=outputNames[i])(
-                layer)
-            outputs.append(layer)
-
-        lossWeights = {name: 1.0 for name in outputNames}
-        metrics = {name: self.listOfMetrics for name in outputNames}
-
-        self.model = tf.keras.Model(input_layer, outputs=outputs)
-        self.model.compile(loss="mean_squared_error", loss_weights=lossWeights,
-                           optimizer=tf.keras.optimizers.Adam(
-                               lr=self.hyperparameters.learningRate),
-                           metrics=metrics)
+        if self.binary:
+            self.model.compile(loss="binary_crossentropy",
+                               optimizer=tf.keras.optimizers.Adam(
+                                   lr=self.hyperparameters.learningRate),
+                               metrics=self.listOfMetrics)
+        else:
+            self.model.compile(loss="mean_squared_error",
+                               optimizer=tf.keras.optimizers.Adam(
+                                   lr=self.hyperparameters.learningRate),
+                               metrics=self.listOfMetrics)
 
         if generateGraph:
             tf.keras.utils.plot_model(self.model,
@@ -145,13 +146,23 @@ class InceptionnetModel(Model):
         output = tf.concat([layer_1, layer_2_2, layer_3_2, layer_4_2, layer_5_2], 1)
         return output
 
-    def trainModel(self, features, labels, validationSplit: float):
+    def trainModel(self, features, labels, validationSplit: float, earlyStopping=False):
         """Train the model by feeding it data."""
-        # earlyStopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
-        #                                                  mode='min', verbose=1,
-        #                                                  patience=15)
-        history = self.model.fit(x=features, y=labels, batch_size=self.hyperparameters.batchSize,
-                                 validation_split=validationSplit, epochs=self.hyperparameters.epochs, shuffle=True)
+        if earlyStopping:
+            earlyStopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
+                                                             mode='min', verbose=1,
+                                                             patience=50)
+            history = self.model.fit(x=features, y=labels,
+                                     batch_size=self.hyperparameters.batchSize,
+                                     validation_split=validationSplit,
+                                     epochs=self.hyperparameters.epochs,
+                                     shuffle=True, callbacks=earlyStopping)
+        else:
+            history = self.model.fit(x=features, y=labels,
+                                     batch_size=self.hyperparameters.batchSize,
+                                     validation_split=validationSplit,
+                                     epochs=self.hyperparameters.epochs,
+                                     shuffle=True)
 
         # The list of epochs is stored separately from the rest of history.
         epochs = history.epoch
@@ -192,11 +203,13 @@ class InceptionnetModel(Model):
         self.model.load_weights(self.exportPath)
 
     def _buildMetrics(self):
-        # self.listOfMetrics = [tf.keras.metrics.Precision(thresholds=self._classificationThreshold,
-        #                                name='precision'),
-        #     tf.keras.metrics.Recall(thresholds=self._classificationThreshold,
-        #                             name="recall")]
-        self.listOfMetrics = ["mean_absolute_error"]
+        if self.binary:
+            self.listOfMetrics = [tf.keras.metrics.Precision(thresholds=self._classificationThreshold,
+                                           name='precision'),
+                tf.keras.metrics.Recall(thresholds=self._classificationThreshold,
+                                        name="recall")]
+        else:
+            self.listOfMetrics = ["mean_absolute_error"]
 
     def _configureForGPU(self):
         # https://www.tensorflow.org/guide/gpu

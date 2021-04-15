@@ -6,14 +6,15 @@
 
 import csv
 from util.Constants import INPUT_CHANNELS, OUTPUT_CHANNELS, \
-    SAMPLES_OF_DATA_TO_LOOK_AT
+    SAMPLES_OF_DATA_TO_LOOK_AT, TOTAL_INPUTS_IN_DATASET
 import numpy as np
 
 class DatasetLoader:
     def __init__(self):
         pass
 
-    def load(self, path="../data_set/final-train-dataset.csv", shuffle=False, onlyLabelToUse=None, useTop3Indicators=False):
+    def load(self, path="../data_set/final-train-dataset.csv", shuffle=False,
+             onlyLabelToUse=None, useOnlyBestIndicators=False, binary=False):
         """
         Load a dataset into a numpy array for features and a numpy array for labels.
         :param path: dataset file path
@@ -39,10 +40,13 @@ class DatasetLoader:
 
                 for i in range(SAMPLES_OF_DATA_TO_LOOK_AT):
                     # Get one time point's data, including indicators:
-                    if useTop3Indicators:
+                    if useOnlyBestIndicators:
+                        # entries.append(
+                        #     [float(row[i + j * SAMPLES_OF_DATA_TO_LOOK_AT]) for
+                        #
                         entries.append(
                             [float(row[i + j * SAMPLES_OF_DATA_TO_LOOK_AT]) for
-                             j in [0, 1, 2, 3, 10]])
+                             j in [0, 1, 2, 5, 7]])
                     else:
                         entries.append(
                             [float(row[i + j * SAMPLES_OF_DATA_TO_LOOK_AT]) for
@@ -51,9 +55,15 @@ class DatasetLoader:
                 data.append(np.array(entries))
 
                 if onlyLabelToUse is not None:
-                    label = [float(row[SAMPLES_OF_DATA_TO_LOOK_AT * INPUT_CHANNELS + onlyLabelToUse])]
+                    if binary:
+                        label = [int(float(row[SAMPLES_OF_DATA_TO_LOOK_AT * TOTAL_INPUTS_IN_DATASET + onlyLabelToUse]) > 0.5)]
+                    else:
+                        label = [float(row[SAMPLES_OF_DATA_TO_LOOK_AT * TOTAL_INPUTS_IN_DATASET + onlyLabelToUse])]
                 else:
-                    label = [float(row[SAMPLES_OF_DATA_TO_LOOK_AT * INPUT_CHANNELS + j]) for j in range(OUTPUT_CHANNELS)]
+                    if binary:
+                        label = [int(float(row[SAMPLES_OF_DATA_TO_LOOK_AT * TOTAL_INPUTS_IN_DATASET + j]) > 0.5) for j in range(OUTPUT_CHANNELS)]
+                    else:
+                        label = [float(row[SAMPLES_OF_DATA_TO_LOOK_AT * TOTAL_INPUTS_IN_DATASET + j]) for j in range(OUTPUT_CHANNELS)]
 
                 labels.append(label)
 

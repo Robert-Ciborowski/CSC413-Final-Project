@@ -21,11 +21,12 @@ class CnnRnnMlpModel(Model):
     hyperparameters: Hyperparameters
     listOfMetrics: List
     exportPath: str
+    binary: bool
 
     _NUMBER_OF_SAMPLES = SAMPLES_OF_DATA_TO_LOOK_AT
     _numberOfInputChannels = INPUT_CHANNELS
 
-    def __init__(self, tryUsingGPU=False):
+    def __init__(self, tryUsingGPU=False, binary=False):
         super().__init__()
 
         if not tryUsingGPU:
@@ -40,6 +41,7 @@ class CnnRnnMlpModel(Model):
         pd.options.display.float_format = "{:.1f}".format
         tf.keras.backend.set_floatx('float64')
         self._classificationThreshold = 0.5
+        self.binary = binary
 
         # The ability of our model to perform well on the validation set and
         # its ability to perform better on the training set is being affected
@@ -78,69 +80,61 @@ class CnnRnnMlpModel(Model):
 
         return result
 
-    def createModel(self, numberOfOutputs: int, generateGraph=False):
+    def createModel(self, generateGraph=False):
         """
         Creates a brand new neural network for this model.
         """
-        outputNames = ["15th-percentile"]
-        outputs = []
-
         # Should go over minutes, not seconds
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
+        layer = layers.Conv1D(filters=16, kernel_size=9, activation='relu',
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
+                                           self._numberOfInputChannels))(input_layer)
+        layer = tf.transpose(layer, [0, 2, 1])
+        forward_lstm = tf.keras.layers.LSTM(layer.shape[2], return_sequences=True)
+        backward_lstm = tf.keras.layers.LSTM(layer.shape[2], activation='relu', return_sequences=True, go_backwards=True)
+        layer = tf.keras.layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=layer.shape)(layer)
+        layer = layers.Flatten()(layer)
 
-        for i in range(numberOfOutputs):
-            layer = layers.Conv1D(filters=16, kernel_size=3, activation='relu',
-                                  input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
-                                               self._numberOfInputChannels))(
-                input_layer)
-            # layer = tf.transpose(layer, [0, 2, 1])
-            print(layer.shape[1])
-            layer = tf.keras.layers.Bidirectional(
-                tf.keras.layers.LSTM(layer.shape[1], input_shape=layer.shape))(layer)
-                # tf.keras.layers.LSTM(60, input_shape=layer.shape))(layer)
-            layer = layers.Flatten()(layer)
+        layer = layers.Dense(60, activation='relu')(layer)
+        layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
+        output = layers.Dense(1, activation='sigmoid', name="output")(layer)
+        self.model = tf.keras.Model(input_layer, outputs=output)
 
-            # MLP for "next day mean >= current mean" prediction. If we wanted to,
-            # we could also connect other MLPs for other outputs if we add more
-            # outputs.
-            # meanDense = layers.Dense(100, activation='relu')(layer)
-            # meanDropout = tf.keras.layers.Dropout(self.hyperparameters.dropout)(meanDense)
-            # meanFinal = layers.Dense(1, activation='sigmoid', name="meanPrediction")(meanDropout)
-
-            layer = layers.Dense(100, activation='relu')(layer)
-            layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
-            layer = layers.Dense(1, activation='sigmoid', name=outputNames[i])(
-                layer)
-            outputs.append(layer)
-
-        lossWeights = {name: 1.0 for name in outputNames}
-        metrics = {name: self.listOfMetrics for name in outputNames}
-
-        self.model = tf.keras.Model(input_layer, outputs=outputs)
-        self.model.compile(loss="mean_squared_error", loss_weights=lossWeights,
-                           optimizer=tf.keras.optimizers.Adam(
-                               lr=self.hyperparameters.learningRate),
-                           metrics=metrics)
-
-        # This compiles the model.
-        # self.model = tf.keras.Model(input_layer, meanFinal)
-        # self.model.compile(loss="binary_crossentropy",
-        #                    optimizer=tf.keras.optimizers.Adam(
-        #                        lr=self.hyperparameters.learningRate),
-        #                    metrics=self.listOfMetrics)
+        if self.binary:
+            # This compiles the model if we are using binary prediction.
+            self.model.compile(loss="binary_crossentropy",
+                               optimizer=tf.keras.optimizers.Adam(
+                                   lr=self.hyperparameters.learningRate),
+                               metrics=self.listOfMetrics)
+        else:
+            # This compiles the model if we are using percentage prediction.
+            self.model.compile(loss="mean_squared_error",
+                               optimizer=tf.keras.optimizers.Adam(
+                                   lr=self.hyperparameters.learningRate),
+                               metrics=self.listOfMetrics)
 
         if generateGraph:
             tf.keras.utils.plot_model(self.model,
                                       "crypto_model.png",
                                       show_shapes=True)
 
-    def trainModel(self, features, labels, validationSplit: float):
+    def trainModel(self, features, labels, validationSplit: float, earlyStopping=False):
         """Train the model by feeding it data."""
-        # earlyStopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
-        #                                                  mode='min', verbose=1,
-        #                                                  patience=15)
-        history = self.model.fit(x=features, y=labels, batch_size=self.hyperparameters.batchSize,
-                                 validation_split=validationSplit, epochs=self.hyperparameters.epochs, shuffle=True)
+        if earlyStopping:
+            earlyStopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
+                                                             mode='min', verbose=1,
+                                                             patience=15)
+            history = self.model.fit(x=features, y=labels,
+                                     batch_size=self.hyperparameters.batchSize,
+                                     validation_split=validationSplit,
+                                     epochs=self.hyperparameters.epochs,
+                                     shuffle=True, callbacks=earlyStopping)
+        else:
+            history = self.model.fit(x=features, y=labels,
+                                     batch_size=self.hyperparameters.batchSize,
+                                     validation_split=validationSplit,
+                                     epochs=self.hyperparameters.epochs,
+                                     shuffle=True)
 
         # The list of epochs is stored separately from the rest of history.
         epochs = history.epoch
@@ -181,11 +175,15 @@ class CnnRnnMlpModel(Model):
         self.model.load_weights(self.exportPath)
 
     def _buildMetrics(self):
-        # self.listOfMetrics = [tf.keras.metrics.Precision(thresholds=self._classificationThreshold,
-        #                                name='precision'),
-        #     tf.keras.metrics.Recall(thresholds=self._classificationThreshold,
-        #                             name="recall")]
-        self.listOfMetrics = ["mean_absolute_error"]
+        if self.binary:
+            # For binary prediction:
+            self.listOfMetrics = [tf.keras.metrics.Precision(thresholds=self._classificationThreshold,
+                                           name='precision'),
+                tf.keras.metrics.Recall(thresholds=self._classificationThreshold,
+                                        name="recall")]
+        else:
+            # For percentage prediction:
+            self.listOfMetrics = ["mean_absolute_error"]
 
     def _configureForGPU(self):
         # https://www.tensorflow.org/guide/gpu

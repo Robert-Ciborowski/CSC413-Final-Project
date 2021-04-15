@@ -23,16 +23,16 @@ if __name__ == "__main__":
     # The training dataset ranges from startDate to trainingEndDate.
     # The testing dataset ranges from trainingEndDate to endDate.
 
-    # Some good dates for if you want a Bitcoin dataset.
     # startDate = datetime(day=1, month=10, year=2017, hour=0, minute=0)
     # trainingStartDate = datetime(day=1, month=1, year=2018, hour=0, minute=0)
-    # trainingEndDate = datetime(day=15, month=3, year=2021, hour=0, minute=0)
-    # endDate = datetime(day=7, month=4, year=2021, hour=0, minute=0)
+    # trainingEndDate = datetime(day=15, month=3, year=2019, hour=0, minute=0)
+    # endDate = datetime(day=7, month=4, year=2019, hour=0, minute=0)
 
-    startDate = datetime(day=1, month=10, year=2018, hour=0, minute=0)
-    trainingStartDate = datetime(day=1, month=1, year=2019, hour=0, minute=0)
-    trainingEndDate = datetime(day=16, month=3, year=2021, hour=0, minute=0)
-    endDate = datetime(day=8, month=4, year=2021, hour=0, minute=0)
+    # Some good dates for if you want a Bitcoin dataset.
+    startDate = datetime(day=1, month=10, year=2017, hour=0, minute=0)
+    trainingStartDate = datetime(day=1, month=1, year=2018, hour=0, minute=0)
+    trainingEndDate = datetime(day=1, month=1, year=2021, hour=0, minute=0)
+    endDate = datetime(day=21, month=3, year=2021, hour=0, minute=0)
 
     historicalObtainer = HistoricalDataObtainer(startDate, endDate,
                                                        "../data_downloads/")
@@ -46,18 +46,18 @@ if __name__ == "__main__":
     # dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="day", medianWithin=1.1)
     # dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="hour", dayByDay=False)
     # dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="2 hour", dayByDay=False)
-    # dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="3 hour", dayByDay=False)
+    dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="3 hour", dayByDay=False)
     # dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="1 hour", dayByDay=False)
-    dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="15 min", dayByDay=False)
+    # dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="15 min", dayByDay=False)
     # dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="5 min", dayByDay=False)
 
-    # This creates the training and testing datasets. You can also use the
-    # useAllIndicators parameter.
+    # This creates the training and testing datasets. You can also set the
+    # useAllIndicators parameter to False if you only want the best indicators.
     print("Analyzing historical stock data for training dataset...")
     dataSetCreator.createDataset(listOfStocks[0], trainingStartDate, trainingEndDate, useAllIndicators=True)
     dataSetCreator.exportToCSV("final-train-dataset.csv")
 
-    dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="15 min", dayByDay=False)
+    dataSetCreator = DataSetCreator(historicalObtainer, dataInterval="3 hour", dayByDay=False)
     print("Analyzing historical stock data for testing dataset...")
     dataSetCreator.createDataset(listOfStocks[0], trainingEndDate, endDate, useAllIndicators=True)
     dataSetCreator.exportToCSV("final-test-dataset.csv")

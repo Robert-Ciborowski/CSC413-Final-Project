@@ -90,11 +90,13 @@ class DataSetCreator:
                                 + ["RSI1-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["RSI2-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["EMA-" + str(i) for i in range(self._numberOfSamples)]
-                                + ["MACD1-" + str(i) for i in range(self._numberOfSamples)]
-                                + ["MACD2-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["EMA2-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["MA1-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["MA2-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["BollUpper-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["BollLower-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["MFI-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["MFI2-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["15th-Percentile", "25th-Percentile",
                                    "35th-Percentile", "Median", "65th-Percentile",
                                    "75th-Percentile", "85th-Percentile"])
@@ -144,9 +146,7 @@ class DataSetCreator:
         :param symbol: e.g. "BTCUSDT"
         :param startDate: e.g. datetime(year=2020, month=1, day=1)
         :param endDate: e.g. datetime(year=2020, month=2, day=1)
-        :param useAllIndicators: if False, only uses the minimum indicators. Make
-                                 sure that the OUTPUT_CHANNEL value in Constants.py
-                                 matches the output of this function!
+        :param useAllIndicators: if False, only uses the minimum indicators
         """
         # These are time-related variables.
         timezone = "Etc/GMT-0"
@@ -181,7 +181,8 @@ class DataSetCreator:
 
         # We will use this to normalize our outputs by dividing them by the
         # mean price of the last (latest/most recent) day in our input.
-        meansToDivideLabelsBy = []
+        priceMeansToDivideLabelsBy = []
+        volumeMeansToDivideLabelsBy = []
         date = startDate
 
         # Now we will be collecting the input prices, input volumes, and output
@@ -208,7 +209,8 @@ class DataSetCreator:
                 output65thPercentiles.append(output65thPercentiles[-1])
                 output75thPercentiles.append(output75thPercentiles[-1])
                 output85thPercentiles.append(output85thPercentiles[-1])
-                meansToDivideLabelsBy.append(meansToDivideLabelsBy[-1])
+                priceMeansToDivideLabelsBy.append(priceMeansToDivideLabelsBy[-1])
+                volumeMeansToDivideLabelsBy.append(volumeMeansToDivideLabelsBy[-1])
                 continue
 
             startIndex = startIndex[0]
@@ -225,19 +227,14 @@ class DataSetCreator:
                 output65thPercentiles.append(output65thPercentiles[-1])
                 output75thPercentiles.append(output75thPercentiles[-1])
                 output85thPercentiles.append(output85thPercentiles[-1])
-                meansToDivideLabelsBy.append(meansToDivideLabelsBy[-1])
+                priceMeansToDivideLabelsBy.append(priceMeansToDivideLabelsBy[-1])
+                volumeMeansToDivideLabelsBy.append(volumeMeansToDivideLabelsBy[-1])
                 continue
 
             endIndex = endIndex[0]
             data = df.iloc[startIndex : endIndex]
-
-            if isAugmenting:
-                augmentation = uniform(0.996, 1.004)
-                closeMeans.append(data["Close"].mean() * augmentation)
-                volumeMeans.append(data["Volume"].mean() * augmentation)
-            else:
-                closeMeans.append(data["Close"].mean())
-                volumeMeans.append(data["Volume"].mean())
+            closeMeans.append(data["Close"].mean())
+            volumeMeans.append(data["Volume"].mean())
 
             # Now we get the start and end dates for output data that would
             # be associated with an entry that begins at the data point found
@@ -254,7 +251,8 @@ class DataSetCreator:
                 output65thPercentiles.append(output65thPercentiles[-1])
                 output75thPercentiles.append(output75thPercentiles[-1])
                 output85thPercentiles.append(output85thPercentiles[-1])
-                meansToDivideLabelsBy.append(meansToDivideLabelsBy[-1])
+                priceMeansToDivideLabelsBy.append(priceMeansToDivideLabelsBy[-1])
+                volumeMeansToDivideLabelsBy.append(volumeMeansToDivideLabelsBy[-1])
                 continue
 
             startIndex = startIndex[0]
@@ -270,7 +268,8 @@ class DataSetCreator:
                 output65thPercentiles.append(output65thPercentiles[-1])
                 output75thPercentiles.append(output75thPercentiles[-1])
                 output85thPercentiles.append(output85thPercentiles[-1])
-                meansToDivideLabelsBy.append(meansToDivideLabelsBy[-1])
+                priceMeansToDivideLabelsBy.append(priceMeansToDivideLabelsBy[-1])
+                volumeMeansToDivideLabelsBy.append(volumeMeansToDivideLabelsBy[-1])
                 continue
 
             endIndex = endIndex[0]
@@ -290,7 +289,8 @@ class DataSetCreator:
 
             if len(startIndex) == 0:
                 date += self._dataTimeInterval
-                meansToDivideLabelsBy.append(meansToDivideLabelsBy[-1])
+                priceMeansToDivideLabelsBy.append(priceMeansToDivideLabelsBy[-1])
+                volumeMeansToDivideLabelsBy.append(volumeMeansToDivideLabelsBy[-1])
                 continue
 
             startIndex = startIndex[0]
@@ -299,12 +299,14 @@ class DataSetCreator:
 
             if len(endIndex) == 0:
                 date += self._dataTimeInterval
-                meansToDivideLabelsBy.append(meansToDivideLabelsBy[-1])
+                priceMeansToDivideLabelsBy.append(priceMeansToDivideLabelsBy[-1])
+                volumeMeansToDivideLabelsBy.append(volumeMeansToDivideLabelsBy[-1])
                 continue
 
             endIndex = endIndex[0]
             data = df.iloc[startIndex: endIndex]
-            meansToDivideLabelsBy.append(data["Close"].mean())
+            priceMeansToDivideLabelsBy.append(data["Close"].mean())
+            volumeMeansToDivideLabelsBy.append(data["Volume"].mean())
             date += self._dataTimeInterval
 
         # Now that our while loop above collected data for inputs and
@@ -321,29 +323,24 @@ class DataSetCreator:
         # The standard RSI is 14 day. Note that if our time interval is 3 hrs,
         # there are 8 data points in a day. Thus, a 14 day RSI is a 112-RSI
         # because 14 * 8 = 112.
-        rsis = (stock["rsi:32"] / 100).tolist()
-        rsis2 = (stock["rsi:144"] / 100).tolist()
-        emas = (stock["ema:32"]).tolist()
-        emas2 = (stock["ema:144"]).tolist()
-        mas = stock["macd:96,208"].tolist()
-        mas2 = stock["macd:24,52"].tolist()
+        rsis = (stock["rsi:112"] / 100).tolist()
+        rsis2 = (stock["rsi:14"] / 100).tolist()
+        emas = (stock["ema:21"]).tolist()
+        macds = stock["macd:96,208"].tolist()
+        macds2 = stock["macd:24,52"].tolist()
         bollUppers = stock["boll.upper:160"].tolist()
         bollLowers = stock["boll.lower:160"].tolist()
         from ta.volume import MFIIndicator
-        moneyFlowIndex = MFIIndicator(stock["close"], stock["close"], stock["close"], stock["volume"], window=32)
+        moneyFlowIndex = MFIIndicator(stock["close"], stock["close"], stock["close"], stock["volume"], window=14)
         mfis = (moneyFlowIndex.money_flow_index().divide(100)).to_list()
-        moneyFlowIndex2 = MFIIndicator(stock["close"], stock["close"],
-                                      stock["close"], stock["volume"],
-                                      window=144)
-        mfis2 = (moneyFlowIndex2.money_flow_index().divide(100)).to_list()
 
         # This gets rid of NANs in our indicators (just in case).
         import math
         rsis = [0 if math.isnan(x) else x for x in rsis]
         rsis2 = [0 if math.isnan(x) else x for x in rsis2]
         emas = [0 if math.isnan(x) else x for x in emas]
-        mas = [0 if math.isnan(x) else x for x in mas]
-        mas2 = [0 if math.isnan(x) else x for x in mas2]
+        macds = [0 if math.isnan(x) else x for x in macds]
+        macds2 = [0 if math.isnan(x) else x for x in macds2]
         bollUppers = [0 if math.isnan(x) else x for x in bollUppers]
         bollLowers = [0 if math.isnan(x) else x for x in bollLowers]
         mfis = [0 if math.isnan(x) else x for x in mfis]
@@ -357,90 +354,55 @@ class DataSetCreator:
         else:
             advanceAmount = 1
 
-        # Normalize out outputs to be between 0 and 1, where:
-        # 0 = 10% decrease
-        # 0.5 = no change
-        # 1 = 10% increase
-        # def normalizeOutput(x):
-        #     x = min(max(x, 0.9), 1.1)
-        #     return (x - 0.9) * 5
+        def fixWithin0And1(x):
+            return min(max(x, 0.0), 1.0)
 
         for i in range(60 * self._datapointsPerDay, entryAmount, advanceAmount):
             print("Percent of entries created: " + str(i / entryAmount * 100) + "%")
+            yesterdayCloseMean = priceMeansToDivideLabelsBy[i]
+            yesterdayVolumeMean = volumeMeansToDivideLabelsBy[i]
             # This gets the input features and outputs for this dataset entry.
             close = closeMeans[i : i + self._numberOfSamples]
             volume = volumeMeans[i : i + self._numberOfSamples]
             rsi = rsis[i : i + self._numberOfSamples]
             rsi2 = rsis2[i: i + self._numberOfSamples]
             ema = emas[i: i + self._numberOfSamples]
-            ema2 = emas2[i: i + self._numberOfSamples]
-            ma = mas[i : i + self._numberOfSamples]
-            ma2 = mas2[i : i + self._numberOfSamples]
-            maxEMA = max(ema)
-            ema = [((m / maxEMA) + 1) / 2 for m in ema]
-            maxEMA2 = max(ema2)
-            ema2 = [((m / maxEMA2) + 1) / 2 for m in ema2]
-            maxMA = max(ma)
-            ma = [((m / maxMA) + 1) / 2 for m in ma]
-            maxMA2 = max(ma2)
-            ma2 = [((m / maxMA2) + 1) / 2 for m in ma2]
+            macd = macds[i: i + self._numberOfSamples]
+            macd2 = macds2[i: i + self._numberOfSamples]
+            ema = [fixWithin0And1(m / yesterdayCloseMean / 2) for m in ema]
+            macd = [fixWithin0And1(m / yesterdayCloseMean / 2 + 0.5) for m in macd]
+            macd2 = [fixWithin0And1(m / yesterdayCloseMean / 2 + 0.5) for m in macd2]
             mfi = mfis[i: i + self._numberOfSamples]
-            mfi2 = mfis2[i: i + self._numberOfSamples]
             bollUpper = bollUppers[i: i + self._numberOfSamples]
-            maxBollUpper = max(bollUpper)
-
-            if maxBollUpper != 0:
-                bollUpper = [m / maxBollUpper for m in bollUpper]
-
+            bollUpper = [fixWithin0And1(m / yesterdayCloseMean / 2) for m in bollUpper]
             bollLower = bollLowers[i: i + self._numberOfSamples]
-            maxBollLower = max(bollLower)
-
-            if maxBollLower != 0:
-                bollLower = [m / maxBollLower for m in bollLower]
-
-            maxClose = max(close)
-            maxVolume = max(volume)
+            bollLower = [fixWithin0And1(m / yesterdayCloseMean / 2) for m in bollLower]
 
             for j in range(len(close)):
-                close[j] /= maxClose
+                close[j] = fixWithin0And1(close[j] / yesterdayCloseMean / 2)
 
             for j in range(len(volume)):
-                volume[j] /= maxVolume
+                volume[j] = fixWithin0And1(volume[j] / yesterdayVolumeMean / 2)
 
             # Finally, we add the entry to the dataset.
             if useAllIndicators:
-                self.inputData.append([close, volume, rsi, rsi2, ema, ema2, ma, ma2,
-                                       bollUpper, bollLower, mfi, mfi2])
-                # pass
+                self.inputData.append([close, volume, rsi, rsi2, ema, macd, macd2,
+                                       bollUpper, bollLower, mfi])
             else:
-                # self.inputData.append([close, volume, rsi, ema, mfi])
-                self.inputData.append([close, volume, rsi, rsi2, ema, ema2, mfi, mfi2])
+                self.inputData.append([close, volume, rsi, ema, mfi])
 
             # This normalizes our data. 0.5 means that the percentile is the same
             # as the last day's mean. 1.0 means that the percentile is twice the
             # value of the last day's mean. We normalize in this way so that we
             # can use the sigmoid activation function for the outputs, which
-            yesterdayCloseMean = meansToDivideLabelsBy[i]
-            # output15thPercentile = normalizeOutput(output15thPercentiles[i] / yesterdayCloseMean)
-            # output25thPercentile = normalizeOutput(output25thPercentiles[i] / yesterdayCloseMean)
-            # output35thPercentile = normalizeOutput(output35thPercentiles[i] / yesterdayCloseMean)
-            # outputMedian = normalizeOutput(outputMedians[i] / yesterdayCloseMean)
-            # output65thPercentile = normalizeOutput(output65thPercentiles[i] / yesterdayCloseMean)
-            # output75thPercentile = normalizeOutput(output75thPercentiles[i] / yesterdayCloseMean)
-            # output85thPercentile = normalizeOutput(output85thPercentiles[i] / yesterdayCloseMean)
-            output15thPercentile = output15thPercentiles[
-                                       i] / yesterdayCloseMean / 2
-            output25thPercentile = output25thPercentiles[
-                                       i] / yesterdayCloseMean / 2
-            output35thPercentile = output35thPercentiles[
-                                       i] / yesterdayCloseMean / 2
+
+            output15thPercentile = output15thPercentiles[i] / yesterdayCloseMean / 2
+            output25thPercentile = output25thPercentiles[i] / yesterdayCloseMean / 2
+            output35thPercentile = output35thPercentiles[i] / yesterdayCloseMean / 2
             outputMedian = outputMedians[i] / yesterdayCloseMean / 2
-            output65thPercentile = output65thPercentiles[
-                                       i] / yesterdayCloseMean / 2
-            output75thPercentile = output75thPercentiles[
-                                       i] / yesterdayCloseMean / 2
-            output85thPercentile = output85thPercentiles[
-                                       i] / yesterdayCloseMean / 2
+            output65thPercentile = output65thPercentiles[i] / yesterdayCloseMean / 2
+            output75thPercentile = output75thPercentiles[i] / yesterdayCloseMean / 2
+            output85thPercentile = output85thPercentiles[i] / yesterdayCloseMean / 2
             self.outputData.append([
                                     output15thPercentile,
                                     output25thPercentile,
