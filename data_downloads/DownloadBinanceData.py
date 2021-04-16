@@ -84,8 +84,8 @@ def downloadSpecificBinanceDataToCSV(tickers: List, oldest=None):
 if __name__ == "__main__":
     tickers = [
         "BTCUSDT",
-        # "LTCUSDT",
-        # "ETHUSDT"
+        "LTCUSDT",
+        "ETHUSDT"
     ]
 
     # This either downloads or updates our dataset.

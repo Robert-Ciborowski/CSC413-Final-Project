@@ -33,21 +33,22 @@ def train():
 
     # Hyperparameters!
     learningRate = 0.00005
-    epochs = 150
+    epochs = 600
     batchSize = 250
     dropout = 0.0
     # Not currently in use:
     # decayRate = 0.03
     # decayStep = 1.0
 
-    model = InceptionnetModel(tryUsingGPU=True, binary=binary)
+    # The model name affects the export file name.
+    model = InceptionnetModel(tryUsingGPU=True, binary=binary, name="inceptionnet-15th-percentile")
     model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize))
     # Predict all percentiles:
     # model.createModel(OUTPUT_CHANNELS, generateGraph=False)
     # Predict one of the percentiles
     model.createModel(generateGraph=False)
     # model.load()
-    epochs, hist = model.trainModel(data, labels, 0.05)
+    epochs, hist = model.trainModel(data, labels, 0.1)
     # listOfMetricsToPlot = model.listOfMetrics
     model.plotCurve(epochs, hist)
     model.save()

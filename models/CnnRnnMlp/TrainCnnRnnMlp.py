@@ -31,21 +31,22 @@ def train():
 
     # Hyperparameters!
     learningRate = 0.00005
-    epochs = 50
+    epochs = 600
     batchSize = 64
     dropout = 0.02
     # Not currently in use:
     # decayRate = 0.03
     # decayStep = 1.0
 
-    model = CnnRnnMlpModel(tryUsingGPU=False, binary=binary)
+    # The model name affects the export file name.
+    model = CnnRnnMlpModel(tryUsingGPU=False, binary=binary, name="cnnrnnmlp-15th-percentile")
     model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize))
     # If we want to predict all the percentiles at once:
     # model.createModel(OUTPUT_CHANNELS, generateGraph=False)
     # If we only want to predict one of the percentiles:
     model.createModel(generateGraph=False)
     # model.load()
-    epochs, hist = model.trainModel(data, labels, 0.15)
+    epochs, hist = model.trainModel(data, labels, 0.1)
     listOfMetricsToPlot = model.listOfMetrics
     model.plotCurve(epochs, hist)
     model.save()

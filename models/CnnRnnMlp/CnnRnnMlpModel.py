@@ -26,7 +26,7 @@ class CnnRnnMlpModel(Model):
     _NUMBER_OF_SAMPLES = SAMPLES_OF_DATA_TO_LOOK_AT
     _numberOfInputChannels = INPUT_CHANNELS
 
-    def __init__(self, tryUsingGPU=False, binary=False):
+    def __init__(self, tryUsingGPU=False, binary=False, name="cnnrnnmlp-15th-percentile"):
         super().__init__()
 
         if not tryUsingGPU:
@@ -34,7 +34,7 @@ class CnnRnnMlpModel(Model):
         else:
             self._configureForGPU()
 
-        self.exportPath = "./model_exports/cnnrnnmlp-15th-percentile"
+        self.exportPath = "./model_exports/" + name
 
         # The following lines adjust the granularity of reporting.
         pd.options.display.max_rows = 10
@@ -90,6 +90,7 @@ class CnnRnnMlpModel(Model):
                               input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
                                            self._numberOfInputChannels))(input_layer)
         layer = tf.transpose(layer, [0, 2, 1])
+        # default number of units: layer.shape[2]
         forward_lstm = tf.keras.layers.LSTM(layer.shape[2], return_sequences=True)
         backward_lstm = tf.keras.layers.LSTM(layer.shape[2], activation='relu', return_sequences=True, go_backwards=True)
         layer = tf.keras.layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=layer.shape)(layer)

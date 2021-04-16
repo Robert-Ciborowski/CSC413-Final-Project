@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from random import randint, uniform
 from typing import List
 import pytz
+import numpy as np
 from stock_pandas import StockDataFrame
 import pandas as pd
 from ta.utils import dropna
@@ -90,13 +91,11 @@ class DataSetCreator:
                                 + ["RSI1-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["RSI2-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["EMA-" + str(i) for i in range(self._numberOfSamples)]
-                                + ["EMA2-" + str(i) for i in range(self._numberOfSamples)]
-                                + ["MA1-" + str(i) for i in range(self._numberOfSamples)]
-                                + ["MA2-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["MACD1-" + str(i) for i in range(self._numberOfSamples)]
+                                + ["MACD2-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["BollUpper-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["BollLower-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["MFI-" + str(i) for i in range(self._numberOfSamples)]
-                                + ["MFI2-" + str(i) for i in range(self._numberOfSamples)]
                                 + ["15th-Percentile", "25th-Percentile",
                                    "35th-Percentile", "Median", "65th-Percentile",
                                    "75th-Percentile", "85th-Percentile"])
@@ -129,7 +128,7 @@ class DataSetCreator:
 
         for i in range(augmentationFactor):
             print("Augmentation " + str(i) + "...")
-            self.createDataset(symbol, startDate, endDate, useAllIndicators)
+            self.createDataset(symbol, startDate, endDate, useAllIndicators=useAllIndicators, isAugmenting=True)
             size = len(self.inputData)
             inputData += self.inputData[0 : int(split * size)]
             outputData += self.outputData[0 : int(split * size)]
@@ -185,6 +184,10 @@ class DataSetCreator:
         volumeMeansToDivideLabelsBy = []
         date = startDate
 
+        # For augmentation:
+        phaseShift = uniform(0, np.pi * 2)
+        count = 0
+
         # Now we will be collecting the input prices, input volumes, and output
         # percentiles.
         while date < endDate:
@@ -233,8 +236,20 @@ class DataSetCreator:
 
             endIndex = endIndex[0]
             data = df.iloc[startIndex : endIndex]
-            closeMeans.append(data["Close"].mean())
-            volumeMeans.append(data["Volume"].mean())
+
+            if isAugmenting:
+                x = phaseShift + count
+                augmentation = 1 + np.sin(x) * uniform(0.02, 0.04)
+                closeMeans.append(data["Close"].mean() * augmentation)
+                volumeMeans.append(data["Volume"].mean() * augmentation)
+                count += uniform(0.3, 0.6)
+
+                if count > 2 * np.pi:
+                    count = 0
+
+            else:
+                closeMeans.append(data["Close"].mean())
+                volumeMeans.append(data["Volume"].mean())
 
             # Now we get the start and end dates for output data that would
             # be associated with an entry that begins at the data point found

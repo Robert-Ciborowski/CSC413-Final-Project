@@ -99,6 +99,7 @@ class InteractiveBrokersDownloader:
 
         print("Performing final processing on data...")
         df = pd.DataFrame(self.dataReceiver.data, columns=["timestamp", "open", "high", "low", "close", "volume"])
+        df = df.rename(columns={"volume": "trades"})
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
         df = df.drop_duplicates(subset=["timestamp"])
         df.to_csv(symbol + "-1m-data.csv", index=False)

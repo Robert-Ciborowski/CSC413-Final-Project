@@ -27,7 +27,7 @@ class InceptionnetModel(Model):
     _NUMBER_OF_SAMPLES = SAMPLES_OF_DATA_TO_LOOK_AT
     _numberOfInputChannels = INPUT_CHANNELS
 
-    def __init__(self, tryUsingGPU=False, binary=False):
+    def __init__(self, tryUsingGPU=False, binary=False, name="inceptionnet-15th-percentile"):
         super().__init__()
 
         if not tryUsingGPU:
@@ -35,7 +35,7 @@ class InceptionnetModel(Model):
         else:
             self._configureForGPU()
 
-        self.exportPath = "./model_exports/inceptionnet"
+        self.exportPath = "./model_exports/" + name
 
         # The following lines adjust the granularity of reporting.
         pd.options.display.max_rows = 10
@@ -88,15 +88,12 @@ class InceptionnetModel(Model):
         # Should go over minutes, not seconds
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
         layer = self._createInceptionLayer(input_layer, 1)
+        layer = layers.MaxPooling1D(pool_size=2)(layer)
         layer = layers.Flatten()(layer)
         print(layer.shape)
-        layer = layers.Dense(64)(layer)
-        layer = layers.Dense(32)(layer)
-        layer = layers.Dense(16)(layer)
-        layer = layers.Dense(8, activation='relu')(layer)
+        layer = layers.Dense(64, activation='relu')(layer)
         layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
         output = layers.Dense(1, activation='sigmoid', name="output")(layer)
-
         self.model = tf.keras.Model(input_layer, outputs=output)
 
         if self.binary:

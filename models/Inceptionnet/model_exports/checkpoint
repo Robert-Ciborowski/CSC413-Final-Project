@@ -1,2 +1,2 @@
-model_checkpoint_path: "inceptionnet"
-all_model_checkpoint_paths: "inceptionnet"
+model_checkpoint_path: "inceptionnet-15th-percentile"
+all_model_checkpoint_paths: "inceptionnet-15th-percentile"
