@@ -92,21 +92,19 @@ class CnnModel(Model):
 
         layer = layers.MaxPooling1D(pool_size=2, strides=1, padding='valid')(layer)
 
-        layer = layers.Conv1D(filters=32, kernel_size=9, activation='relu',
+        layer = layers.Conv1D(filters=32, kernel_size=6, activation='relu',
                               input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
                                            self._numberOfInputChannels))(layer)
 
         layer = layers.MaxPooling1D(pool_size=2, strides=1, padding='valid')(layer)
 
-        layer = layers.Conv1D(filters=64, kernel_size=9, activation='relu',
+        layer = layers.Conv1D(filters=64, kernel_size=3, activation='relu',
                               input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
                                            self._numberOfInputChannels))(layer)
 
         layer = layers.MaxPooling1D(pool_size=2, strides=1, padding='valid')(layer)
 
         layer = layers.Flatten()(layer)
-
-        layer = layers.Dense(128, activation='relu')(layer)
 
         layer = layers.Dense(64, activation='relu')(layer)
 

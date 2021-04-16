@@ -86,13 +86,17 @@ class RnnModel(Model):
         # Should go over minutes, not seconds
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
 
-        layer = layers.Embedding(input_dim=self._numberOfInputChannels, output_dim=128)(input_layer)
+        # layer = layers.TimeDistributed(layers.Embedding(input_dim=self._numberOfInputChannels, output_dim=64))(input_layer)
+        #
+        # layer = layers.TimeDistributed(layers.Bidirectional(layers.LSTM(layer.shape[1], return_sequences=True)))(layer)
+        #
+        # layer = layers.TimeDistributed(layers.Bidirectional(layers.LSTM(64)))(layer)
+        print(input_layer.shape)
+        forward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], return_sequences=True)
+        backward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], activation='relu', return_sequences=True, go_backwards=True)
+        layer = tf.keras.layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=input_layer.shape)(input_layer)
 
-        layer = layers.Bidirectional(layers.LSTM(layer.shape[2], return_sequences=True), input_shape=layer.shape)(layer)
-
-        layer = layers.Flatten()(layer)
-
-        layer = layers.Dense(64, activation='relu')(layer)
+        layer = layers.Dense(1, activation='sigmoid')(layer)
 
         outputs.append(layer)
 

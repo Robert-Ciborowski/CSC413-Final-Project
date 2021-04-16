@@ -25,8 +25,8 @@ def train():
                                       binary=binary)
 
     # Hyperparameters!
-    learningRate = 0.0005
-    epochs = 300
+    learningRate = 0.00005
+    epochs = 600
     batchSize = 64
     dropout = 0.02
     # Not currently in use:
