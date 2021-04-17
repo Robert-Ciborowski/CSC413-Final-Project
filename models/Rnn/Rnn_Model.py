@@ -93,10 +93,10 @@ class RnnModel(Model):
         # layer = layers.TimeDistributed(layers.Bidirectional(layers.LSTM(64)))(layer)
         print(input_layer.shape)
         forward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], return_sequences=True)
-        backward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], activation='relu', return_sequences=True, go_backwards=True)
+        backward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], activation='tanh', return_sequences=True, go_backwards=True)
         layer = tf.keras.layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=input_layer.shape)(input_layer)
 
-        layer = layers.Dense(1, activation='sigmoid')(layer)
+        layer = layers.Dense(1, activation='relu')(layer)
 
         outputs.append(layer)
 
