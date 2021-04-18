@@ -138,7 +138,8 @@ class DataSetCreator:
         self.inputData = inputData + inputValidationData
         self.outputData = outputData + outputValidationData
 
-    def createDataset(self, symbol: str, startDate, endDate, useAllIndicators=True, isAugmenting=False):
+    def createDataset(self, symbol: str, startDate, endDate, useAllIndicators=True,
+                      isAugmenting=False, timePeriodForOutputs=24):
         """
         Creates a dataset. Please make sure that the start and end dates are
         the beginnings of days.
@@ -146,6 +147,10 @@ class DataSetCreator:
         :param startDate: e.g. datetime(year=2020, month=1, day=1)
         :param endDate: e.g. datetime(year=2020, month=2, day=1)
         :param useAllIndicators: if False, only uses the minimum indicators
+        :param isAugmenting: used by createAugmentedDataset when augmenting.
+        :param timePeriodForOutputs: if set to 24, this will generate the labels
+                                     (percentiles) for the next 24 hours after
+                                     the 15-day period that appears in the input.
         """
         # These are time-related variables.
         timezone = "Etc/GMT-0"
@@ -271,7 +276,7 @@ class DataSetCreator:
                 continue
 
             startIndex = startIndex[0]
-            date2 += timedelta(days=1)
+            date2 += timedelta(hours=timePeriodForOutputs)
             endIndex = df.index[df["Timestamp"] == date2].tolist()
 
             if len(endIndex) == 0:

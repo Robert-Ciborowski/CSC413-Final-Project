@@ -30,23 +30,24 @@ def train():
                                       binary=binary)
 
     # Hyperparameters!
-    learningRate = 0.00005
-    epochs = 600
-    batchSize = 64
+    learningRate = 0.00002
+    epochs = 2000
+    batchSize = 256
     dropout = 0.02
+    regularization = 0.0001
     # Not currently in use:
     # decayRate = 0.03
     # decayStep = 1.0
 
     # The model name affects the export file name.
     model = CnnRnnMlpModel(tryUsingGPU=False, binary=binary, name="cnnrnnmlp-15th-percentile")
-    model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize))
+    model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize, regularization=regularization))
     # If we want to predict all the percentiles at once:
     # model.createModel(OUTPUT_CHANNELS, generateGraph=False)
     # If we only want to predict one of the percentiles:
     model.createModel(generateGraph=False)
     # model.load()
-    epochs, hist = model.trainModel(data, labels, 0.1)
+    epochs, hist = model.trainModel(data, labels, 0.05)
     listOfMetricsToPlot = model.listOfMetrics
     model.plotCurve(epochs, hist)
     model.save()
@@ -55,7 +56,10 @@ def train():
     testData, testLabels = datasetLoader.load(shuffle=False, path="../../data_set/final-test-dataset.csv",
                                               onlyLabelToUse=outputToPredict, useOnlyBestIndicators=False)
     model.evaluate(testData, testLabels)
-    print(model.predict(testData[50:51,:,:]))
+    # n = testData.shape[0] - 5
+    n = 583
+    print(model.predict(testData[n:n+1,:,:]))
+    print(testLabels[n:n+1])
     print(testData.shape[0])
 
     # If you want to generate predictions for a whole batch of data, do this:

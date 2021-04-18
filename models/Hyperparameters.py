@@ -10,11 +10,15 @@ class Hyperparameters:
     decayRate: float
     decayStep: float
     dropout: float
+    regularization: float
 
-    def __init__(self, learningRate: float, epochs: int, dropout: float, batchSize: int, decayRate=0.5, decayStep=1.0):
+    def __init__(self, learningRate: float, epochs: int, dropout: float,
+                 batchSize: int, decayRate=0.5, decayStep=1.0,
+                 regularization=0.0):
         self.learningRate = learningRate
         self.epochs = epochs
         self.batchSize = batchSize
         self.dropout = dropout
         self.decayRate = decayRate
         self.decayStep = decayStep
+        self.regularization = regularization

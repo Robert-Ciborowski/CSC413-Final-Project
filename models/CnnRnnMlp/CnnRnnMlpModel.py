@@ -10,6 +10,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from keras_self_attention.backend import regularizers
 from matplotlib import pyplot as plt
 from tensorflow.keras import layers
 from models.Hyperparameters import Hyperparameters
@@ -86,19 +87,30 @@ class CnnRnnMlpModel(Model):
         """
         # Should go over minutes, not seconds
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
-        layer = layers.Conv1D(filters=16, kernel_size=9, activation='relu',
+        # print(input_layer.shape)
+        # layer = tf.transpose(input_layer, [0, 2, 1])
+        print(input_layer.shape)
+        layer = layers.Conv1D(filters=64, kernel_size=9, activation='relu',
                               input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
-                                           self._numberOfInputChannels))(input_layer)
+                                           self._numberOfInputChannels),
+                              kernel_regularizer=regularizers.l2(self.hyperparameters.regularization))(input_layer)
         layer = tf.transpose(layer, [0, 2, 1])
         # default number of units: layer.shape[2]
-        forward_lstm = tf.keras.layers.LSTM(layer.shape[2], return_sequences=True)
-        backward_lstm = tf.keras.layers.LSTM(layer.shape[2], activation='relu', return_sequences=True, go_backwards=True)
+        print(layer.shape)
+        forward_lstm = tf.keras.layers.LSTM(layer.shape[1], return_sequences=True,
+                                            kernel_regularizer=regularizers.l2(self.hyperparameters.regularization))
+        backward_lstm = tf.keras.layers.LSTM(layer.shape[1], activation='relu',
+                                             return_sequences=True, go_backwards=True,
+                                             kernel_regularizer=regularizers.l2(self.hyperparameters.regularization))
         layer = tf.keras.layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=layer.shape)(layer)
+        print(layer.shape)
         layer = layers.Flatten()(layer)
-
-        layer = layers.Dense(60, activation='relu')(layer)
+        print(layer.shape)
+        layer = layers.Dense(60, activation='relu',kernel_regularizer=regularizers.l2(self.hyperparameters.regularization))(layer)
         layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
-        output = layers.Dense(1, activation='sigmoid', name="output")(layer)
+        layer = layers.Dense(10, activation='relu', kernel_regularizer=regularizers.l2(self.hyperparameters.regularization))(layer)
+        layer = tf.keras.layers.Dropout(self.hyperparameters.dropout)(layer)
+        output = layers.Dense(1, activation='sigmoid', name="output", kernel_regularizer=regularizers.l2(self.hyperparameters.regularization))(layer)
         self.model = tf.keras.Model(input_layer, outputs=output)
 
         if self.binary:
