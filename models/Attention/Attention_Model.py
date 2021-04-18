@@ -31,7 +31,7 @@ class AttentionModel(Model):
         else:
             self._configureForGPU()
 
-        self.exportPath = "./model_exports/inceptionnet"
+        self.exportPath = "./model_exports/Attention"
 
         # The following lines adjust the granularity of reporting.
         pd.options.display.max_rows = 10
@@ -100,7 +100,7 @@ class AttentionModel(Model):
 
         layer = SeqSelfAttention(attention_width=120,
                                  attention_type=SeqSelfAttention.ATTENTION_TYPE_MUL,
-                                 attention_activation=None,
+                                 attention_activation='sigmoid',
                                  use_attention_bias=False,
                                  name='Attention')(layer)
 
