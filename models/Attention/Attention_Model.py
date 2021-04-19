@@ -87,18 +87,14 @@ class AttentionModel(Model):
         # Should go over minutes, not seconds
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
 
-        # forward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], return_sequences=True)
-        # backward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], activation='tanh', return_sequences=True, go_backwards=True)
-        # layer = layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=input_layer.shape)(input_layer)
+        print(input_layer.shape)
 
-        layer = layers.Bidirectional(layers.LSTM(input_layer.shape[2], activation='tanh', return_sequences=True))(input_layer)
+        layer = layers.Bidirectional(layers.LSTM(10, return_sequences=True))(input_layer)
 
-        layer = SeqSelfAttention(attention_width=120,
-                                 attention_type=SeqSelfAttention.ATTENTION_TYPE_MUL,
-                                 attention_activation='sigmoid',
+        layer = SeqSelfAttention(attention_type=SeqSelfAttention.ATTENTION_TYPE_MUL,
+                                 attention_activation='tanh',
                                  kernel_regularizer=keras.regularizers.l2(1e-4),
-                                 bias_regularizer=keras.regularizers.l1(1e-4),
-                                 attention_regularizer_weight=1e-4,
+                                 bias_regularizer=keras.regularizers.l2(1e-4),
                                  use_attention_bias=True,
                                  name='Attention')(layer)
 
