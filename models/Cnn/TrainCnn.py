@@ -25,17 +25,18 @@ def train():
                                       binary=binary)
 
     # Hyperparameters!
-    learningRate = 0.00005
-    epochs = 600
+    learningRate = 0.0005
+    epochs = 200
     batchSize = 64
     dropout = 0.02
+    regularization = 0.0001
     # Not currently in use:
     # decayRate = 0.03
     # decayStep = 1.0
 
     # The model name affects the export file name.
     model = CnnModel(tryUsingGPU=True, binary=binary)
-    model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize))
+    model.setup(Hyperparameters(learningRate, epochs, dropout, batchSize, regularization=regularization))
     # If we want to predict all the percentiles at once:
     # model.createModel(OUTPUT_CHANNELS, generateGraph=False)
     # If we only want to predict one of the percentiles:

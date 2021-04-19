@@ -9,6 +9,7 @@ import tensorflow as tf
 from matplotlib import pyplot as plt
 from tensorflow.keras import layers
 from models.Hyperparameters import Hyperparameters
+from keras_self_attention.backend import regularizers
 from models.Model import Model
 from util.Constants import INPUT_CHANNELS, OUTPUT_CHANNELS, \
     SAMPLES_OF_DATA_TO_LOOK_AT
@@ -86,29 +87,38 @@ class CnnModel(Model):
         # Should go over minutes, not seconds
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
 
-        layer = layers.Conv1D(filters=16, kernel_size=9, activation='relu',
-                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
-                                           self._numberOfInputChannels))(input_layer)
-
-        layer = layers.MaxPooling1D(pool_size=2, strides=1, padding='valid')(layer)
-
-        layer = layers.Conv1D(filters=32, kernel_size=6, activation='relu',
-                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
-                                           self._numberOfInputChannels))(layer)
-
-        layer = layers.MaxPooling1D(pool_size=2, strides=1, padding='valid')(layer)
-
         layer = layers.Conv1D(filters=64, kernel_size=3, activation='relu',
                               input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
+                                           self._numberOfInputChannels),
+                              kernel_regularizer=regularizers.l2(self.hyperparameters.regularization))(input_layer)
+
+        layer = layers.MaxPooling1D(pool_size=2, strides=1, padding='valid')(layer)
+
+        layer = layers.BatchNormalization()(layer)
+
+        layer = layers.Activation("sigmoid")(layer)
+
+        layer = layers.Conv1D(filters=32, kernel_size=3, activation='relu',
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
                                            self._numberOfInputChannels))(layer)
 
         layer = layers.MaxPooling1D(pool_size=2, strides=1, padding='valid')(layer)
+
+        layer = layers.Conv1D(filters=16, kernel_size=3, activation='relu',
+                              input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
+                                           self._numberOfInputChannels))(layer)
+
+        layer = layers.MaxPooling1D(pool_size=2, strides=1, padding='valid')(layer)
+
+        layer = layers.BatchNormalization()(layer)
 
         layer = layers.Flatten()(layer)
 
         layer = layers.Dense(64, activation='relu')(layer)
 
-        layer = layers.Dense(32, activation='relu')(layer)
+        layer = layers.BatchNormalization()(layer)
+
+        layer = layers.Dense(1, activation='relu')(layer)
 
         outputs.append(layer)
 

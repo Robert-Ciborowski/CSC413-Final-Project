@@ -87,26 +87,24 @@ class AttentionModel(Model):
         # Should go over minutes, not seconds
         input_layer = layers.Input(shape=(SAMPLES_OF_DATA_TO_LOOK_AT, self._numberOfInputChannels))
 
-        # layer = layers.Conv1D(filters=16, kernel_size=3, activation='relu',
-        #                       input_shape=(SAMPLES_OF_DATA_TO_LOOK_AT,
-        #                                    self._numberOfInputChannels))(input_layer)
-        # layer = tf.transpose(layer, [0, 2, 1])
-        # print(layer.shape[1])
-        # layer = tf.keras.layers.Bidirectional(
-        #     tf.keras.layers.LSTM(layer.shape[1], input_shape=layer.shape, return_sequences=True))(layer)
-        forward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], return_sequences=True)
-        backward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], activation='relu', return_sequences=True, go_backwards=True)
-        layer = layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=input_layer.shape)(input_layer)
+        # forward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], return_sequences=True)
+        # backward_lstm = tf.keras.layers.LSTM(input_layer.shape[2], activation='tanh', return_sequences=True, go_backwards=True)
+        # layer = layers.Bidirectional(forward_lstm, backward_layer=backward_lstm, input_shape=input_layer.shape)(input_layer)
+
+        layer = layers.Bidirectional(layers.LSTM(input_layer.shape[2], activation='tanh', return_sequences=True))(input_layer)
 
         layer = SeqSelfAttention(attention_width=120,
                                  attention_type=SeqSelfAttention.ATTENTION_TYPE_MUL,
                                  attention_activation='sigmoid',
-                                 use_attention_bias=False,
+                                 kernel_regularizer=keras.regularizers.l2(1e-4),
+                                 bias_regularizer=keras.regularizers.l1(1e-4),
+                                 attention_regularizer_weight=1e-4,
+                                 use_attention_bias=True,
                                  name='Attention')(layer)
 
         layer = layers.Flatten()(layer)
 
-        layer = layers.Dense(100, activation='relu')(layer)
+        layer = layers.Dense(1, activation='relu')(layer)
 
         outputs.append(layer)
 
