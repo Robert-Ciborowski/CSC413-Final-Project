@@ -91,10 +91,11 @@ class AttentionModel(Model):
 
         layer = layers.Bidirectional(layers.LSTM(10, return_sequences=True))(input_layer)
 
-        layer = SeqSelfAttention(attention_type=SeqSelfAttention.ATTENTION_TYPE_MUL,
-                                 attention_activation='tanh',
-                                 kernel_regularizer=keras.regularizers.l2(1e-4),
-                                 bias_regularizer=keras.regularizers.l2(1e-4),
+        layer = SeqSelfAttention(attention_width=60,
+                                 attention_type=SeqSelfAttention.ATTENTION_TYPE_MUL,
+                                 attention_activation='sigmoid',
+                                 kernel_regularizer=keras.regularizers.l2(1e-6),
+                                 bias_regularizer=keras.regularizers.l2(1e-6),
                                  use_attention_bias=True,
                                  name='Attention')(layer)
 
