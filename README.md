@@ -14,5 +14,12 @@ Financial time series prediction is a major topic within the finance industry. I
 4. Train the models in the models folder.
 5. Enjoy! 
 
+## Machine Learning Models and Layers Used
+- CNN
+- LSTM
+- CNN + LSTM + MLP
+- LSTM + Attention
+- InceptionNet
+
 ## Technologies Used
 TensorFlow 2, Keras, Python
