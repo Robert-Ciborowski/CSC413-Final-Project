@@ -1,5 +1,5 @@
 # Cryptocurrency Price Distribution Prediction Using Neural Networks
-Our final project, a paper which uses neural networks to provide Bitcoin and other cryptocurrency traders with good buy/sell points. This is our final project for CSC413H1, Winter 2021, taught by Jimmy Ba and Bo Wang at the University of Toronto.
+Our final project, a paper which uses neural networks to provide Bitcoin and other cryptocurrency traders with good buy/sell points. This is our final project for CSC413H1, Winter 2021, taught by Jimmy Ba and Bo Wang at the University of Toronto. The paper can be found under "Cryptocurrency Price Distribution Prediction Using Neural Networks.pdf".
 
 ## Abstract
 Price prediction in the financial market is attractive for both holders and traders due to its volatility and uncertainty. Many have tried to analyze the future of the financial market by using methods and models from machine learning. In this paper, we construct several neural network models to predict sequential data for cryptocurrencies, specifically Convolutional Neural Network (CNN), Recurrent Neural Network (RNN), CNN-RNN Multilayer Perceptron (CNN-RNN-MLP), Long Short-Term Memory with Attention (LSTM-Attention), and InceptionNet. The results showed that CNN-RNN-MLP performs the best among other models.
